@@ -64,7 +64,7 @@ const signUp = async (req, res) => {
       });
     }
 
-    const newUser = await AuthService.signUp(result.data);
+    await AuthService.signUp(result.data);
     return res.status(201).json({
       status: "success",
       message: "Account created successfully!"
@@ -106,13 +106,13 @@ const login = async (req, res) => {
       });
     }
 
-    const user = await AuthService.login(result.data);
+    const { user } = await AuthService.login(result.data);
 
     const token = jwt.sign(
-  { userId: user._id, roleId: user.roleId },
-  process.env.JWT_SECRET,
-  { expiresIn: result.rememberMe ? '30d' : '2h' }
-);
+    { userId: user._id, roleId: user.roleId },
+    process.env.JWT_SECRET,
+    { expiresIn: result.rememberMe ? '30d' : '2h' }
+  );
 
     res.cookie('token', token, {
       httpOnly: true,
