@@ -83,10 +83,6 @@ const login = async ({ email, password }) => {
 
 }
 
-const logout = async (req, res) => {
-    
-}
-
 const getUser = async (userId) => {
 
 }

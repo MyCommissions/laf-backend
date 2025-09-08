@@ -4,8 +4,11 @@ const { ROLES } = require('../utils/roles');
 const AuthController = require('../controllers/auth.controller');
 const AuthMiddleware = require('../middlewares/auth.middleware');
 
+// POST : ACCOUNT CREATION
 router.post('/admin/create-account', AuthMiddleware.authorize, AuthMiddleware.hasRole(ROLES.ADMIN), AuthController.createAccount);
 router.post('/register', AuthController.signUp);
+
+// POST : ACCOUNT LOGIN
 router.post('/login', AuthController.login);                                                                                                                                                                                                      
 
 module.exports = router;
