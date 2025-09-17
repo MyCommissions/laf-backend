@@ -10,6 +10,15 @@ const getMatchedItems = async (req, res) => {
   }
 };
 
+const getPendingItems = async (req, res) => {
+  try {
+    const items = await MatchedItemService.getPendingItems();
+    return res.status(200).json(items);
+  } catch (error) {
+    return res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
 const claimMatchedItem = async (req, res) => {
   try {
     const { matchedItemId } = req.params;
@@ -40,6 +49,7 @@ const getAllClaimedItem = async (req, res) => {
 
 module.exports = {
   getMatchedItems,
+  getPendingItems,
   claimMatchedItem,
   getAllClaimedItem,
 };

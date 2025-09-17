@@ -32,7 +32,17 @@ const itemSchema = new mongoose.Schema(
     },
     itemColor: {
       type: String,
-      enum: ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"],
+      enum: [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Blue",
+        "Indigo",
+        "Violet",
+        "Black",
+        "White",
+      ],
     },
     brandType: {
       type: String,
@@ -46,9 +56,17 @@ const itemSchema = new mongoose.Schema(
     found: {
       type: Boolean,
       default: false,
-    }
+    },
+    claimed: {
+      type: Boolean,
+      default: false,
+    },
+    matched: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 const Item = mongoose.model('Item', itemSchema);

@@ -12,7 +12,7 @@ const matchedItemSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: [ "pending", "matched", "claimed"],
+      enum: ["pending", "matched", "claimed"],
       default: "pending",
     },
     claimedBy: {
@@ -21,7 +21,7 @@ const matchedItemSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 const MatchedItem = mongoose.model("MatchedItem", matchedItemSchema);
