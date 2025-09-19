@@ -17,12 +17,12 @@ router.get("/found", AuthMiddleware.authorize, ItemController.getFoundItems);
 
 // GET : Items by category
 router.get(
-  "/lost/category/:category",
+  "/lost/:category",
   AuthMiddleware.authorize,
   ItemController.getLostItemsByCategory
 );
 router.get(
-  "/found/category/:category",
+  "/found/:category",
   AuthMiddleware.authorize,
   ItemController.getFoundItemsByCategory
 );
@@ -35,6 +35,14 @@ router.get(
   AuthMiddleware.authorize,
   AuthMiddleware.hasRole(ROLES.ADMIN),
   MatchedItemController.getMatchedItems
+);
+
+// GET : All pending items (admin only)
+router.get(
+  "/pending",
+  AuthMiddleware.authorize,
+  AuthMiddleware.hasRole(ROLES.ADMIN),
+  MatchedItemController.getPendingItems
 );
 
 // // GET : Single matched item (admin only)

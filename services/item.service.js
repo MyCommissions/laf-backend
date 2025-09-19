@@ -24,6 +24,8 @@ const createLostItem = async (data, currentUser) => {
     throw new Error("Name, Category, Place Lost and Found At are required!");
   }
 
+  await categoryMatch(data);
+
   if (!currentUser) {
     throw new Error("Please login to post a lost item");
   }
@@ -42,6 +44,8 @@ const createLostItem = async (data, currentUser) => {
     uniqueIdentifier,
     remarks,
     found: false,
+    claimed: false,
+    matched: false,
   });
 
   await MatchedItemService.createOrUpdateMatch(newItem);
@@ -77,6 +81,8 @@ const createFoundItem = async (data, currentUser) => {
     throw new Error("Name, Category, Place Found and Found At are required!");
   }
 
+  await categoryMatch(data);
+
   if (!currentUser) {
     throw new Error("Please login to post a found item");
   }
@@ -95,6 +101,8 @@ const createFoundItem = async (data, currentUser) => {
     uniqueIdentifier,
     remarks,
     found: true,
+    claimed: false,
+    matched: false,
   });
 
   await MatchedItemService.createOrUpdateMatch(newItem);
@@ -121,7 +129,9 @@ const getLostItems = async (currentUser) => {
     throw new Error("Please login to get lost items");
   }
 
-  return await Item.find().where({ found: false }).sort({ createdAt: -1 });
+  return await Item.find()
+    .where({ found: false, claimed: false, matched: false })
+    .sort({ createdAt: -1 });
 };
 
 const getLostItemsByCategory = async (currentUser, category) => {
@@ -136,7 +146,12 @@ const getLostItemsByCategory = async (currentUser, category) => {
   }
 
   return await Item.find()
-    .where({ category: formattedCategory, found: false })
+    .where({
+      category: formattedCategory,
+      found: false,
+      claimed: false,
+      matched: false,
+    })
     .sort({ createdAt: -1 });
 };
 
@@ -145,7 +160,9 @@ const getFoundItems = async (currentUser) => {
     throw new Error("Please login to get found items");
   }
 
-  return await Item.find().where({ found: true }).sort({ createdAt: -1 });
+  return await Item.find()
+    .where({ found: true, claimed: false, matched: false })
+    .sort({ createdAt: -1 });
 };
 
 const getFoundItemsByCategory = async (currentUser, category) => {
@@ -160,7 +177,12 @@ const getFoundItemsByCategory = async (currentUser, category) => {
   }
 
   return await Item.find()
-    .where({ category: formattedCategory, found: true })
+    .where({
+      category: formattedCategory,
+      found: true,
+      claimed: false,
+      matched: false,
+    })
     .sort({ createdAt: -1 });
 };
 

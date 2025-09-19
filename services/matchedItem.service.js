@@ -17,38 +17,71 @@ const createOrUpdateMatch = async (item) => {
   let matched = null;
 
   if (item.found) {
-    // new found item → check against lost items
-    const lostItems = await Item.find({ found: false });
+    const lostItems = await Item.find({ found: false, matched: false });
     for (let lost of lostItems) {
       if (isMatch(lost, item)) {
+        // check if there’s already a pending record for this pair
+        const pendingRecord = await MatchedItem.findOne({
+          lostItem: lost._id,
+          status: "pending",
+        });
+
         matched = await MatchedItem.findOneAndUpdate(
           { lostItem: lost._id, foundItem: item._id },
           { status: "matched" },
           { new: true, upsert: true }
         );
-        break;
+
+        if (matched.status === "matched") {
+          await Item.findByIdAndUpdate(item._id, { matched: true });
+          await Item.findByIdAndUpdate(lost._id, { matched: true });
+        }
+
+        // if there was a pending record without foundItem → remove it
+        if (pendingRecord && !pendingRecord.foundItem) {
+          await MatchedItem.findByIdAndDelete(pendingRecord._id);
+        }
+
+        return matched;
       }
     }
   } else {
-    // new lost item → check against found items
-    const foundItems = await Item.find({ found: true });
+    const foundItems = await Item.find({ found: true, matched: false });
     for (let found of foundItems) {
       if (isMatch(item, found)) {
+        const pendingRecord = await MatchedItem.findOne({
+          foundItem: found._id,
+          status: "pending",
+        });
+
         matched = await MatchedItem.findOneAndUpdate(
           { lostItem: item._id, foundItem: found._id },
           { status: "matched" },
           { new: true, upsert: true }
         );
-        break;
+
+        if (matched.status === "matched") {
+          await Item.findByIdAndUpdate(found._id, { matched: true });
+          await Item.findByIdAndUpdate(item._id, { matched: true });
+        }
+
+        if (pendingRecord && !pendingRecord.lostItem) {
+          await MatchedItem.findByIdAndDelete(pendingRecord._id);
+        }
+
+        return matched;
       }
     }
   }
 
-  if (!matched) {
+  // fresh item check
+  const freshItem = await Item.findById(item._id);
+
+  if (!freshItem.matched) {
     matched = await MatchedItem.findOneAndUpdate(
       {
-        lostItem: item.found ? null : item._id,
-        foundItem: item.found ? item._id : null,
+        lostItem: freshItem.found ? null : freshItem._id,
+        foundItem: freshItem.found ? freshItem._id : null,
       },
       { status: "pending" },
       { new: true, upsert: true }
@@ -78,6 +111,14 @@ const claimMatchedItem = async (currentUser, matchedItemId, code) => {
   if (code !== "111111") {
     throw new Error("Pin code is not valid");
   }
+
+  console.log(matchedItem);
+
+  const lostItem = await Item.findById(matchedItem.lostItem);
+  const foundItem = await Item.findById(matchedItem.foundItem);
+
+  await lostItem.updateOne({ claimed: true, matched: true });
+  await foundItem.updateOne({ claimed: true, matched: true });
 
   matchedItem.status = "claimed";
   matchedItem.claimedBy = currentUser.userId;
@@ -111,6 +152,13 @@ const getMatchedItems = async () => {
     .sort({ createdAt: -1 });
 };
 
+const getPendingItems = async () => {
+  return await MatchedItem.find({ status: "pending" })
+    .populate("lostItem")
+    .populate("foundItem")
+    .sort({ createdAt: -1 });
+};
+
 const getAllClaimedItem = async () => {
   return await MatchedItem.find({ status: "claimed" })
     .populate("lostItem")
@@ -123,5 +171,6 @@ module.exports = {
   createOrUpdateMatch,
   claimMatchedItem,
   getMatchedItems,
+  getPendingItems,
   getAllClaimedItem,
 };
