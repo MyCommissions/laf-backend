@@ -15,6 +15,10 @@ const createItemSchema = z.object({
     .string({ required_error: "Contact number is required" })
     .min(7, "Contact number is too short"),
 
+  email: z
+    .string({ required_error: "Email is required" })
+    .email("Invalid email format"),
+
   category: z.enum(CATEGORIES, {
     errorMap: () => ({ message: "Invalid category" }),
   }),
@@ -26,7 +30,17 @@ const createItemSchema = z.object({
   itemSize: z.enum(["Small", "Medium", "Large"]).optional(),
 
   itemColor: z
-    .enum(["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"])
+    .enum([
+      "Red",
+      "Orange",
+      "Yellow",
+      "Green",
+      "Blue",
+      "Indigo",
+      "Violet",
+      "Black",
+      "White",
+    ])
     .optional(),
 
   brandType: z.string().optional(),
