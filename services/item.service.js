@@ -1,13 +1,15 @@
 const Item = require('../models/item');
 const MatchedItemService = require('../services/matchedItem.service');
 const { capitalizeFirst } = require('../utils/usecases');
-const { CATEGORIES } = require('../utils/constants')
+const { CATEGORIES } = require('../utils/constants');
+const { sendEmail } = require('../services/email.service');
 
 const createLostItem = async (data, currentUser) => {
   const {
     firstName,
     lastName,
     contactNumber,
+    email,
     category,
     imageUrl,
     moneyAmount,
@@ -18,7 +20,7 @@ const createLostItem = async (data, currentUser) => {
     remarks
   } = data;
 
-  if (!firstName || !lastName || !contactNumber || !category || !remarks) {
+  if (!firstName || !lastName || !contactNumber || !email || !category || !remarks) {
     throw new Error("Name, Category, Place Lost and Found At are required!");
   }
 
@@ -30,6 +32,7 @@ const createLostItem = async (data, currentUser) => {
     firstName,
     lastName,
     contactNumber,
+    email,
     category,
     imageUrl,
     moneyAmount,
@@ -43,6 +46,12 @@ const createLostItem = async (data, currentUser) => {
 
   await MatchedItemService.createOrUpdateMatch(newItem);
 
+  await sendEmail(
+    email,
+    "Lost Item Posted",
+    `Hi ${firstName}, your lost item (${category}) has been posted successfully.`
+  );
+
   return { newItem };
 };
 
@@ -51,6 +60,7 @@ const createFoundItem = async (data, currentUser) => {
     firstName,
     lastName,
     contactNumber,
+    email,
     category,
     imageUrl,
     moneyAmount,
@@ -63,7 +73,7 @@ const createFoundItem = async (data, currentUser) => {
 
   console.log(currentUser);
 
-  if (!firstName || !lastName || !contactNumber || !category || !remarks) {
+  if (!firstName || !lastName || !contactNumber || !email || !category || !remarks) {
     throw new Error("Name, Category, Place Found and Found At are required!");
   }
 
@@ -75,6 +85,7 @@ const createFoundItem = async (data, currentUser) => {
     firstName,
     lastName,
     contactNumber,
+    email,
     category,
     imageUrl,
     moneyAmount,
@@ -87,6 +98,12 @@ const createFoundItem = async (data, currentUser) => {
   });
 
   await MatchedItemService.createOrUpdateMatch(newItem);
+
+  await sendEmail(
+    email,
+    "Found Item Posted",
+    `Hi ${firstName}, your found item (${category}) has been posted successfully.`
+  );
 
   return { newItem };
 };

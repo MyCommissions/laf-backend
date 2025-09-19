@@ -1,5 +1,6 @@
 const MatchedItem = require("../models/matchedItem");
 const Item = require("../models/item");
+const { sendEmail } = require('../services/email.service');
 
 const isMatch = (lost, found) => {
   return (
@@ -60,7 +61,10 @@ const createOrUpdateMatch = async (item) => {
 const claimMatchedItem = async (currentUser, matchedItemId, code) => {
   if (!currentUser) throw new Error("Please login to claim items");
 
-  const matchedItem = await MatchedItem.findById(matchedItemId);
+  const matchedItem = await MatchedItem.findById(matchedItemId)
+    .populate("lostItem")
+    .populate("foundItem");
+
   if (!matchedItem) throw new Error("Matched item not found");
 
   if (matchedItem.status !== "matched") {
@@ -71,13 +75,31 @@ const claimMatchedItem = async (currentUser, matchedItemId, code) => {
     throw new Error("Pin code is required");
   }
 
-  if (code !== '111111') {
+  if (code !== "111111") {
     throw new Error("Pin code is not valid");
   }
 
   matchedItem.status = "claimed";
   matchedItem.claimedBy = currentUser.userId;
   await matchedItem.save();
+
+  // 📧 Notify the lost item owner
+  if (matchedItem.lostItem?.email) {
+    await sendEmail(
+      matchedItem.lostItem.email,
+      "Lost Item Claimed",
+      `Hi ${matchedItem.lostItem.firstName}, your lost item (${matchedItem.lostItem.category}) has been successfully claimed.`
+    );
+  }
+
+  // 📧 Notify the found item owner
+  if (matchedItem.foundItem?.email) {
+    await sendEmail(
+      matchedItem.foundItem.email,
+      "Found Item Claimed",
+      `Hi ${matchedItem.foundItem.firstName}, the item you posted as found (${matchedItem.foundItem.category}) has been successfully claimed.`
+    );
+  }
 
   return matchedItem;
 };
