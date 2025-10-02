@@ -25,7 +25,7 @@ const createItemSchema = z.object({
 
   imageUrl: z.string().url("Image must be a valid URL").optional(),
 
-  moneyAmount: z.number().min(0).optional().default(0),
+  moneyAmount: z.coerce.number().min(0).optional().default(0),
 
   itemSize: z.enum(["Small", "Medium", "Large"]).optional(),
 
@@ -49,11 +49,10 @@ const createItemSchema = z.object({
 
   remarks: z.string().optional(),
 
-  found: z.boolean().optional().default(false),
+  found: z.coerce.boolean().optional().default(false),
 
-  claimed: z.boolean().optional().default(false),
+  claimed: z.coerce.boolean().optional().default(false),
 
-  // 🔹 newly added fields for better tracking
   placeLost: z.string().optional().default(""),
   placeFound: z.string().optional().default(""),
   foundAt: z.string().datetime("Invalid date format").optional(),

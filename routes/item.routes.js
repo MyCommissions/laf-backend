@@ -1,21 +1,37 @@
 const express = require("express");
 const router = express.Router();
 const { ROLES } = require("../utils/roles");
+const upload = require("../middlewares/upload");
 const ItemController = require("../controllers/item.controller");
 const MatchedItemController = require("../controllers/matchedItem.controller");
 const AuthMiddleware = require("../middlewares/auth.middleware");
 
 // -------------------- ITEM ROUTES -------------------- //
 
-// POST : Create new lost/found items
-router.post("/lost", AuthMiddleware.authorize, ItemController.createLostItem);
-router.post("/found", AuthMiddleware.authorize, ItemController.createFoundItem);
+// GET : All Items (for logged-in users, with signed image URLs)
+router.get("/", AuthMiddleware.authorize, ItemController.getAllItems);
 
-// GET : Lost & Found items (for logged-in users)
+// POST : Create new lost item (with optional image upload)
+router.post(
+  "/lost",
+  AuthMiddleware.authorize,
+  upload.single("image"), // handle file upload
+  ItemController.createLostItem
+);
+
+// POST : Create new found item (with optional image upload)
+router.post(
+  "/found",
+  AuthMiddleware.authorize,
+  upload.single("image"),
+  ItemController.createFoundItem
+);
+
+// GET : Lost & Found items (with signed image URLs)
 router.get("/lost", AuthMiddleware.authorize, ItemController.getLostItems);
 router.get("/found", AuthMiddleware.authorize, ItemController.getFoundItems);
 
-// GET : Items by category
+// GET : Lost & Found items by category
 router.get(
   "/lost/:category",
   AuthMiddleware.authorize,
@@ -29,7 +45,7 @@ router.get(
 
 // -------------------- MATCHED ITEM ROUTES -------------------- //
 
-// GET : All matched items (admin only)
+// GET : All matched items (admin only, with signed image URLs if needed)
 router.get(
   "/matched",
   AuthMiddleware.authorize,
@@ -45,15 +61,7 @@ router.get(
   MatchedItemController.getPendingItems
 );
 
-// // GET : Single matched item (admin only)
-// router.get(
-//   "/matched/:matchedItemId",
-//   AuthMiddleware.authorize,
-//   AuthMiddleware.hasRole(ROLES.ADMIN),
-//   MatchedItemController.getMatchedItemById
-// );
-
-// POST : Claim a matched item (user can claim their own, admin override allowed)
+// POST : Claim a matched item (admin only)
 router.post(
   "/matched/:matchedItemId/claim",
   AuthMiddleware.authorize,
@@ -61,9 +69,9 @@ router.post(
   MatchedItemController.claimMatchedItem
 );
 
-// GET : All lost/found items (admin only)
+// GET : All items (admin only)
 router.get(
-  "/",
+  "/admin",
   AuthMiddleware.authorize,
   AuthMiddleware.hasRole(ROLES.ADMIN),
   ItemController.getAllItems

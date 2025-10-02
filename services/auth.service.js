@@ -83,9 +83,13 @@ const login = async ({ email, password }) => {
 
 }
 
-const getUser = async (userId) => {
-
-}
+const getCurrentUser = async (userId) => {
+  const user = await User.findById(userId).select("-password"); // never return password
+  if (!user) {
+    throw new Error("User not found");
+  }
+  return user;
+};
 
 const updateUser = async (userId, data) => {
 
@@ -95,4 +99,4 @@ const deleteUser = async (userId) => {
 
 }
 
-module.exports = { createAccount, signUp, login };
+module.exports = { createAccount, signUp, login, getCurrentUser };
