@@ -116,8 +116,8 @@ const login = async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      secure: false,
+      sameSite: 'lax',
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
@@ -157,8 +157,63 @@ const login = async (req, res) => {
   }
 };
 
+const getCurrentUser = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Not authenticated",
+      });
+    }
+
+    const user = await AuthService.getCurrentUser(req.user.userId);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        user: {
+          id: user._id,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          email: user.email,
+          role: user.roleId,
+        },
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false, // set to true if HTTPS in production
+      sameSite: "lax",
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAccount,
   signUp,
-  login
+  login,
+  logout,
+  getCurrentUser
 };
