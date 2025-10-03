@@ -20,7 +20,6 @@ const createOrUpdateMatch = async (item) => {
     const lostItems = await Item.find({ found: false, matched: false });
     for (let lost of lostItems) {
       if (isMatch(lost, item)) {
-        // check if there’s already a pending record for this pair
         const pendingRecord = await MatchedItem.findOne({
           lostItem: lost._id,
           status: "pending",
@@ -30,14 +29,40 @@ const createOrUpdateMatch = async (item) => {
           { lostItem: lost._id, foundItem: item._id },
           { status: "matched" },
           { new: true, upsert: true }
-        );
+        )
+          .populate("lostItem")
+          .populate("foundItem"); // populate so we can access emails
 
         if (matched.status === "matched") {
           await Item.findByIdAndUpdate(item._id, { matched: true });
           await Item.findByIdAndUpdate(lost._id, { matched: true });
+
+          // 📧 Email both parties
+          if (matched.lostItem?.email) {
+            await sendEmail(
+              matched.lostItem.email,
+              "Possible Match Found",
+              `Hi ${matched.lostItem.firstName || "there"}, 
+              We found a possible match for your lost item (${
+                matched.lostItem.category
+              }). 
+              Please log in to review and confirm.`
+            );
+          }
+
+          if (matched.foundItem?.email) {
+            await sendEmail(
+              matched.foundItem.email,
+              "Possible Match Found",
+              `Hi ${matched.foundItem.firstName || "there"}, 
+              Someone posted a lost item that matches the one you found (${
+                matched.foundItem.category
+              }). 
+              Please log in to review and confirm.`
+            );
+          }
         }
 
-        // if there was a pending record without foundItem → remove it
         if (pendingRecord && !pendingRecord.foundItem) {
           await MatchedItem.findByIdAndDelete(pendingRecord._id);
         }
@@ -58,11 +83,38 @@ const createOrUpdateMatch = async (item) => {
           { lostItem: item._id, foundItem: found._id },
           { status: "matched" },
           { new: true, upsert: true }
-        );
+        )
+          .populate("lostItem")
+          .populate("foundItem");
 
         if (matched.status === "matched") {
           await Item.findByIdAndUpdate(found._id, { matched: true });
           await Item.findByIdAndUpdate(item._id, { matched: true });
+
+          // 📧 Email both parties
+          if (matched.lostItem?.email) {
+            await sendEmail(
+              matched.lostItem.email,
+              "Possible Match Found",
+              `Hi ${matched.lostItem.firstName || "there"}, 
+              We found a possible match for your lost item (${
+                matched.lostItem.category
+              }). 
+              Please log in to review and confirm.`
+            );
+          }
+
+          if (matched.foundItem?.email) {
+            await sendEmail(
+              matched.foundItem.email,
+              "Possible Match Found",
+              `Hi ${matched.foundItem.firstName || "there"}, 
+              Someone posted a lost item that matches the one you found (${
+                matched.foundItem.category
+              }). 
+              Please log in to review and confirm.`
+            );
+          }
         }
 
         if (pendingRecord && !pendingRecord.lostItem) {
