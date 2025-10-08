@@ -143,15 +143,56 @@ const createOrUpdateMatch = async (item) => {
   return matched;
 };
 
-const claimMatchedItem = async (currentUser, matchedItemId, code) => {
+const claimMatchedItem = async (
+  currentUser,
+  matchedItemIdOrFoundItemId,
+  code
+) => {
   if (!currentUser) throw new Error("Please login to claim items");
 
-  const matchedItem = await MatchedItem.findById(matchedItemId)
+  // Try to find in MatchedItem first
+  let matchedItem = await MatchedItem.findById(matchedItemIdOrFoundItemId)
     .populate("lostItem")
     .populate("foundItem");
 
-  if (!matchedItem) throw new Error("Matched item not found");
+  // If not found in matched list, check if it's a found item (unmatched)
+  if (!matchedItem) {
+    const foundItem = await Item.findById(matchedItemIdOrFoundItemId);
 
+    if (!foundItem || !foundItem.found)
+      throw new Error("Item not found or not a found item");
+
+    if (foundItem.claimed)
+      throw new Error("This found item has already been claimed");
+
+    if (foundItem.matched)
+      throw new Error(
+        "This item is already matched; please claim through matched list"
+      );
+
+    if (!code) throw new Error("Pin code is required");
+    if (code !== "111111") throw new Error("Pin code is not valid");
+
+    // Mark the found item as claimed
+    await foundItem.updateOne({ claimed: true });
+
+    // 📧 Notify the found item poster
+    if (foundItem.email) {
+      await sendEmail(
+        foundItem.email,
+        "Found Item Claimed",
+        `Hi ${foundItem.firstName}, your found item (${foundItem.category}) has been successfully claimed.`
+      );
+    }
+
+    return {
+      status: "claimed",
+      foundItem,
+      claimedBy: currentUser.userId,
+    };
+  }
+
+  // Existing matched claim logic below (unchanged)
   if (matchedItem.status !== "matched") {
     throw new Error("Item is not available for claiming");
   }
@@ -163,8 +204,6 @@ const claimMatchedItem = async (currentUser, matchedItemId, code) => {
   if (code !== "111111") {
     throw new Error("Pin code is not valid");
   }
-
-  console.log(matchedItem);
 
   const lostItem = await Item.findById(matchedItem.lostItem);
   const foundItem = await Item.findById(matchedItem.foundItem);

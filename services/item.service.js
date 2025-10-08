@@ -1,49 +1,60 @@
-const Item = require("../models/item")
-const MatchedItemService = require("../services/matchedItem.service")
-const { capitalizeFirst } = require("../utils/usecases")
-const { CATEGORIES } = require("../utils/constants")
-const { sendEmail } = require("../services/email.service")
+const Item = require("../models/item");
+const MatchedItemService = require("../services/matchedItem.service");
+const { capitalizeFirst } = require("../utils/usecases");
+const { CATEGORIES } = require("../utils/constants");
+const { sendEmail } = require("../services/email.service");
 
 // Validate category-specific fields
 const categoryMatch = async (data) => {
   switch (data.category) {
     case "Umbrella":
-      if (!data.itemSize) throw new Error("Item Size is required for Umbrella")
-      if (!data.itemColor) throw new Error("Item Color is required for Umbrella")
-      break
+      if (!data.itemSize) throw new Error("Item Size is required for Umbrella");
+      if (!data.itemColor)
+        throw new Error("Item Color is required for Umbrella");
+      break;
 
     case "Wallet":
-      if (!data.moneyAmount || data.moneyAmount < 0) throw new Error("Money Amount is required for Wallet")
-      if (!data.itemSize) throw new Error("Item Size is required for Wallet")
-      if (!data.itemColor) throw new Error("Item Color is required for Wallet")
-      if (!data.brandType) throw new Error("Brand Type is required for Wallet")
-      break
+      if (!data.moneyAmount || data.moneyAmount < 0)
+        throw new Error("Money Amount is required for Wallet");
+      if (!data.itemSize) throw new Error("Item Size is required for Wallet");
+      if (!data.itemColor) throw new Error("Item Color is required for Wallet");
+      if (!data.brandType) throw new Error("Brand Type is required for Wallet");
+      break;
 
     case "Phone":
-      if (!data.brandType) throw new Error("Brand Type is required for Phone")
-      if (!data.uniqueIdentifier) throw new Error("Unique Identifier (IMEI/serial) is required for Phone")
-      break
+      if (!data.brandType) throw new Error("Brand Type is required for Phone");
+      if (!data.uniqueIdentifier)
+        throw new Error(
+          "Unique Identifier (IMEI/serial) is required for Phone"
+        );
+      break;
 
     case "Keys":
-      if (!data.uniqueIdentifier) throw new Error("Unique Identifier (key type/description) is required for Keys")
-      break
+      if (!data.uniqueIdentifier)
+        throw new Error(
+          "Unique Identifier (key type/description) is required for Keys"
+        );
+      break;
 
     case "ID":
-      if (!data.uniqueIdentifier) throw new Error("Unique Identifier is required for ID (ID number)")
-      break
+      if (!data.uniqueIdentifier)
+        throw new Error("Unique Identifier is required for ID (ID number)");
+      break;
 
     case "Cash":
-      if (!data.moneyAmount || data.moneyAmount <= 0) throw new Error("Money Amount is required for Cash")
-      break
+      if (!data.moneyAmount || data.moneyAmount <= 0)
+        throw new Error("Money Amount is required for Cash");
+      break;
 
     case "Others":
-      if (!data.remarks) throw new Error("Remarks/Description is required for Others")
-      break
+      if (!data.remarks)
+        throw new Error("Remarks/Description is required for Others");
+      break;
 
     default:
-      throw new Error(`Unknown category: ${data.category}`)
+      throw new Error(`Unknown category: ${data.category}`);
   }
-}
+};
 
 const createLostItem = async (data, currentUser) => {
   const {
@@ -59,15 +70,21 @@ const createLostItem = async (data, currentUser) => {
     brandType,
     uniqueIdentifier,
     remarks,
-  } = data
+  } = data;
 
-  if (!firstName || !lastName || !contactNumber || !email || !category || !remarks) {
-    throw new Error("Name, Category, Place Lost and Found At are required!")
+  if (
+    !firstName ||
+    !lastName ||
+    !contactNumber ||
+    !email ||
+    !category
+  ) {
+    throw new Error("Name, Category, Place Lost and Found At are required!");
   }
 
-  await categoryMatch(data)
+  await categoryMatch(data);
 
-  if (!currentUser) throw new Error("Please login to post a lost item")
+  if (!currentUser) throw new Error("Please login to post a lost item");
 
   const newItem = await Item.create({
     firstName,
@@ -85,18 +102,18 @@ const createLostItem = async (data, currentUser) => {
     found: false,
     claimed: false,
     matched: false,
-  })
+  });
 
-  await MatchedItemService.createOrUpdateMatch(newItem)
+  await MatchedItemService.createOrUpdateMatch(newItem);
 
   await sendEmail(
     email,
     "Lost Item Posted",
-    `Hi ${firstName}, your lost item (${category}) has been posted successfully.`,
-  )
+    `Hi ${firstName}, your lost item (${category}) has been posted successfully.`
+  );
 
-  return { newItem }
-}
+  return { newItem };
+};
 
 const createFoundItem = async (data, currentUser) => {
   const {
@@ -112,15 +129,21 @@ const createFoundItem = async (data, currentUser) => {
     brandType,
     uniqueIdentifier,
     remarks,
-  } = data
+  } = data;
 
-  if (!firstName || !lastName || !contactNumber || !email || !category || !remarks) {
-    throw new Error("Name, Category, Place Found and Found At are required!")
+  if (
+    !firstName ||
+    !lastName ||
+    !contactNumber ||
+    !email ||
+    !category
+  ) {
+    throw new Error("Name, Category, Place Found and Found At are required!");
   }
 
-  await categoryMatch(data)
+  await categoryMatch(data);
 
-  if (!currentUser) throw new Error("Please login to post a found item")
+  if (!currentUser) throw new Error("Please login to post a found item");
 
   const newItem = await Item.create({
     firstName,
@@ -138,57 +161,67 @@ const createFoundItem = async (data, currentUser) => {
     found: true,
     claimed: false,
     matched: false,
-  })
+  });
 
-  await MatchedItemService.createOrUpdateMatch(newItem)
+  await MatchedItemService.createOrUpdateMatch(newItem);
 
   await sendEmail(
     email,
     "Found Item Posted",
-    `Hi ${firstName}, your found item (${category}) has been posted successfully.`,
-  )
+    `Hi ${firstName}, your found item (${category}) has been posted successfully.`
+  );
 
-  return { newItem }
-}
+  return { newItem };
+};
 
 const getAllItems = async (currentUser) => {
-  if (!currentUser) throw new Error("Please login to get lost/found items")
-  return await Item.find().where({ claimed: false, matched: false }).sort({ createdAt: -1 })
-}
+  if (!currentUser) throw new Error("Please login to get lost/found items");
+  return await Item.find()
+    .where({ claimed: false, matched: false })
+    .sort({ createdAt: -1 });
+};
 
 const getLostItems = async (currentUser) => {
-  if (!currentUser) throw new Error("Please login to get lost items")
-  return await Item.find().where({ found: false, claimed: false, matched: false }).sort({ createdAt: -1 })
-}
+  if (!currentUser) throw new Error("Please login to get lost items");
+  return await Item.find()
+    .where({ found: false, claimed: false, matched: false })
+    .sort({ createdAt: -1 });
+};
 
 const getLostItemsByCategory = async (currentUser, category) => {
-  if (!currentUser) throw new Error("Please login to get lost items by category")
-  const formattedCategory = capitalizeFirst(category)
-  if (!CATEGORIES.includes(formattedCategory)) throw new Error("Invalid category")
+  if (!currentUser)
+    throw new Error("Please login to get lost items by category");
+  const formattedCategory = capitalizeFirst(category);
+  if (!CATEGORIES.includes(formattedCategory))
+    throw new Error("Invalid category");
   return await Item.find({
     category: formattedCategory,
     found: false,
     claimed: false,
     matched: false,
-  }).sort({ createdAt: -1 })
-}
+  }).sort({ createdAt: -1 });
+};
 
 const getFoundItems = async (currentUser) => {
-  if (!currentUser) throw new Error("Please login to get found items")
-  return await Item.find().where({ found: true, claimed: false, matched: false }).sort({ createdAt: -1 })
-}
+  if (!currentUser) throw new Error("Please login to get found items");
+  return await Item.find()
+    .where({ found: true, claimed: false, matched: false })
+    .sort({ createdAt: -1 });
+};
 
 const getFoundItemsByCategory = async (currentUser, category) => {
-  if (!currentUser) throw new Error("Please login to get found items by category")
-  const formattedCategory = capitalizeFirst(category)
-  if (!CATEGORIES.includes(formattedCategory)) throw new Error("Invalid category")
+  if (!currentUser)
+    throw new Error("Please login to get found items by category");
+  const formattedCategory = capitalizeFirst(category);
+  if (!CATEGORIES.includes(formattedCategory))
+    throw new Error("Invalid category");
   return await Item.find({
     category: formattedCategory,
     found: true,
     claimed: false,
     matched: false,
-  }).sort({ createdAt: -1 })
-}
+  }).sort({ createdAt: -1 });
+};
 
 module.exports = {
   createLostItem,
@@ -198,4 +231,4 @@ module.exports = {
   getFoundItems,
   getLostItemsByCategory,
   getFoundItemsByCategory,
-}
+};
