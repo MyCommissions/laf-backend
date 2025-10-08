@@ -61,6 +61,13 @@ router.get(
   MatchedItemController.getPendingItems
 );
 
+router.get(
+  "/all",
+  AuthMiddleware.authorize,
+  AuthMiddleware.hasRole(ROLES.ADMIN),
+  MatchedItemController.getAllMatchedAndPendingItems
+);
+
 // POST : Claim a matched item (admin only)
 router.post(
   "/matched/:matchedItemId/claim",
