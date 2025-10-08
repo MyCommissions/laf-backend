@@ -258,10 +258,46 @@ const getAllClaimedItem = async () => {
     .sort({ updatedAt: -1 });
 };
 
+const getAllMatchedAndPendingItems = async () => {
+  const matchedAndPending = await MatchedItem.find({
+    status: { $in: ["matched", "pending"] },
+  })
+    .populate("lostItem")
+    .populate("foundItem");
+
+  // Build unified list with status included
+  const items = [];
+
+  matchedAndPending.forEach((record) => {
+    const status = record.status; // "matched" or "pending"
+
+    if (record.lostItem) {
+      items.push({
+        ...record.lostItem.toObject(),
+        status,
+        type: "lost", // optional: to know which side the item belongs to
+      });
+    }
+
+    if (record.foundItem) {
+      items.push({
+        ...record.foundItem.toObject(),
+        status,
+        type: "found",
+      });
+    }
+  });
+
+  // Sort newest first
+  return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+
 module.exports = {
   createOrUpdateMatch,
   claimMatchedItem,
   getMatchedItems,
   getPendingItems,
   getAllClaimedItem,
+  getAllMatchedAndPendingItems,
 };

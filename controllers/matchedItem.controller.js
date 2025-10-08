@@ -47,9 +47,19 @@ const getAllClaimedItem = async (req, res) => {
   }
 };
 
+const getAllMatchedAndPendingItems = async (req, res) => {
+  try {
+    const items = await MatchedItemService.getAllMatchedAndPendingItems();
+    return res.status(200).json(items);
+  } catch (error) {
+    return res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
 module.exports = {
   getMatchedItems,
   getPendingItems,
   claimMatchedItem,
   getAllClaimedItem,
+  getAllMatchedAndPendingItems,
 };
