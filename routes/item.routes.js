@@ -72,7 +72,6 @@ router.get(
 router.post(
   "/matched/:matchedItemId/claim",
   AuthMiddleware.authorize,
-  AuthMiddleware.hasRole(ROLES.ADMIN),
   MatchedItemController.claimMatchedItem
 );
 
