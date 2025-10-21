@@ -146,37 +146,39 @@ const createOrUpdateMatch = async (item) => {
 const claimMatchedItem = async (
   currentUser,
   matchedItemIdOrFoundItemId,
-  code
+  code,
+  claimInfo
 ) => {
   if (!currentUser) throw new Error("Please login to claim items");
 
-  // Try to find in MatchedItem first
   let matchedItem = await MatchedItem.findById(matchedItemIdOrFoundItemId)
     .populate("lostItem")
     .populate("foundItem");
 
-  // If not found in matched list, check if it's a found item (unmatched)
+  // 🟢 CASE 1: Found item (no match)
   if (!matchedItem) {
     const foundItem = await Item.findById(matchedItemIdOrFoundItemId);
-
     if (!foundItem || !foundItem.found)
       throw new Error("Item not found or not a found item");
 
     if (foundItem.claimed)
       throw new Error("This found item has already been claimed");
-
     if (foundItem.matched)
       throw new Error(
         "This item is already matched; please claim through matched list"
       );
-
     if (!code) throw new Error("Pin code is required");
     if (code !== "111111") throw new Error("Pin code is not valid");
 
-    // Mark the found item as claimed
+    // 🟢 Mark claimed
     await foundItem.updateOne({ claimed: true });
 
-    // 📧 Notify the found item poster
+    // ✅ Store claim info (optional: could be stored in Item model as well)
+    const time = claimInfo.timeOfClaim
+      ? new Date(claimInfo.timeOfClaim)
+      : new Date();
+
+    // 📧 Notify
     if (foundItem.email) {
       await sendEmail(
         foundItem.email,
@@ -188,22 +190,19 @@ const claimMatchedItem = async (
     return {
       status: "claimed",
       foundItem,
-      claimedBy: currentUser.userId,
+      claimInfo: {
+        ...claimInfo,
+        timeOfClaim: time,
+      },
     };
   }
 
-  // Existing matched claim logic below (unchanged)
+  // 🟢 CASE 2: Matched item
   if (matchedItem.status !== "matched") {
     throw new Error("Item is not available for claiming");
   }
-
-  if (!code) {
-    throw new Error("Pin code is required");
-  }
-
-  if (code !== "111111") {
-    throw new Error("Pin code is not valid");
-  }
+  if (!code) throw new Error("Pin code is required");
+  if (code !== "111111") throw new Error("Pin code is not valid");
 
   const lostItem = await Item.findById(matchedItem.lostItem);
   const foundItem = await Item.findById(matchedItem.foundItem);
@@ -212,10 +211,18 @@ const claimMatchedItem = async (
   await foundItem.updateOne({ claimed: true, matched: true });
 
   matchedItem.status = "claimed";
-  matchedItem.claimedBy = currentUser.userId;
+  matchedItem.claimedBy = currentUser._id;
+  matchedItem.claimInfo = {
+    firstName: claimInfo.firstName,
+    lastName: claimInfo.lastName,
+    contactNumber: claimInfo.contactNumber,
+    timeOfClaim: claimInfo.timeOfClaim || new Date(),
+    imageUuid: claimInfo.imageUuid || null,
+  };
+
   await matchedItem.save();
 
-  // 📧 Notify the lost item owner
+  // 📧 Notify users
   if (matchedItem.lostItem?.email) {
     await sendEmail(
       matchedItem.lostItem.email,
@@ -224,7 +231,6 @@ const claimMatchedItem = async (
     );
   }
 
-  // 📧 Notify the found item owner
   if (matchedItem.foundItem?.email) {
     await sendEmail(
       matchedItem.foundItem.email,

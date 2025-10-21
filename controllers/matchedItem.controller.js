@@ -1,5 +1,7 @@
 const MatchedItemService = require("../services/matchedItem.service");
 const Validation = require('../validations/itemSchema');
+const { ZodError } = require("zod");
+const uploadService = require("../services/upload.service");
 
 const getMatchedItems = async (req, res) => {
   try {
@@ -22,19 +24,57 @@ const getPendingItems = async (req, res) => {
 const claimMatchedItem = async (req, res) => {
   try {
     const { matchedItemId } = req.params;
-    const result = await Validation.claimLostItemSchema.safeParse(req.body);
+
+    // 🧩 Validate body
+    const result = Validation.claimLostItemSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        status: "fail",
+        message: result.error.errors[0].message,
+      });
+    }
+
+    const { pin, claimInfo } = result.data;
+
+    // 🟢 Upload image to Cloudflare R2 (if present)
+    let imageKey = null;
+    if (req.file) {
+      imageKey = await uploadService.uploadToR2(req.file);
+    }
+
+    // ✅ Merge Cloudflare UUID into claim info
+    const finalClaimInfo = {
+      ...claimInfo,
+      imageUuid: imageKey,
+    };
+
+    // 🧩 Proceed to service
     const item = await MatchedItemService.claimMatchedItem(
       req.user,
       matchedItemId,
-      result.data.pin.code
+      pin.code,
+      finalClaimInfo
     );
+
     return res.status(200).json({
       status: "success",
       message: "Item claimed successfully!",
       item,
     });
   } catch (error) {
-    return res.status(400).json({ status: "fail", message: error.message });
+    console.error("Claim error:", error);
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        status: "fail",
+        message: error.errors.map((e) => e.message),
+      });
+    }
+
+    return res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
   }
 };
 
