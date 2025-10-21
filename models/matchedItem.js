@@ -25,7 +25,6 @@ const matchedItemSchema = new mongoose.Schema(
     claimInfo: {
       imageUuid: {
         type: String,
-        default: null,
       },
       contactNumber: {
         type: String,

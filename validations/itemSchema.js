@@ -64,6 +64,22 @@ const claimLostItemSchema = z.object({
       .string({ required_error: "Pin number is required" })
       .regex(sixDigits, "Pin must be exactly 6 digits"),
   }),
+  claimInfo: z.object({
+    imageUuid: z
+      .string({ required_error: "Image UUID is required" })
+      .min(1, "Image UUID cannot be empty")
+      .optional(),
+    contactNumber: z
+      .string({ required_error: "Contact number is required" })
+      .min(7, "Contact number is too short"),
+    firstName: z
+      .string({ required_error: "First name is required" })
+      .min(1, "First name cannot be empty"),
+    lastName: z
+      .string({ required_error: "Last name is required" })
+      .min(1, "Last name cannot be empty"),
+    timeOfClaim: z.string().datetime().optional(), // frontend may send ISO timestamp
+  }),
 });
 
 module.exports = {

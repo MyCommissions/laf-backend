@@ -72,6 +72,7 @@ router.get(
 router.post(
   "/matched/:matchedItemId/claim",
   AuthMiddleware.authorize,
+  upload.single("imageUuid"),
   MatchedItemController.claimMatchedItem
 );
 
