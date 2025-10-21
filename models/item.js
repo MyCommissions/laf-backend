@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const itemSchema = new mongoose.Schema(
   {
@@ -69,10 +69,34 @@ const itemSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // 🟢 New field for claim information
+    claimInfo: {
+      imageUuid: {
+        type: String,
+        default: null,
+      },
+      contactNumber: {
+        type: String,
+        default: null,
+      },
+      firstName: {
+        type: String,
+        default: null,
+      },
+      lastName: {
+        type: String,
+        default: null,
+      },
+      timeOfClaim: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   { timestamps: true, versionKey: false }
 );
 
-const Item = mongoose.model('Item', itemSchema);
+const Item = mongoose.model("Item", itemSchema);
 
 module.exports = Item;
