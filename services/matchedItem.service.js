@@ -305,7 +305,7 @@ const getPendingItems = async () => {
 };
 
 const getAllClaimedItem = async () => {
-  // 1️⃣ Get all claimed matched items
+  // 1️⃣ Get all matched items that have been claimed
   const matchedClaims = await MatchedItem.find({ status: "claimed" })
     .populate("lostItem")
     .populate("foundItem")
@@ -319,25 +319,40 @@ const getAllClaimedItem = async () => {
     matched: false,
   }).sort({ updatedAt: -1 });
 
-  // 3️⃣ Normalize data for unified response
+  // 3️⃣ Normalize matched claimed items
   const formattedMatched = matchedClaims.map((record) => ({
     _id: record._id,
     type: "matched",
     status: record.status,
     claimedBy: record.claimedBy,
-    lostItem: record.lostItem,
-    foundItem: record.foundItem,
+    lostItem: record.lostItem
+      ? {
+          ...record.lostItem.toObject(),
+          type: "lost",
+        }
+      : null,
+    foundItem: record.foundItem
+      ? {
+          ...record.foundItem.toObject(),
+          type: "found",
+        }
+      : null,
     claimInfo: record.claimInfo,
     updatedAt: record.updatedAt,
     createdAt: record.createdAt,
   }));
 
+  // 4️⃣ Normalize standalone claimed found items
   const formattedStandalone = standaloneClaims.map((item) => ({
     _id: item._id,
     type: "standalone",
     status: "claimed",
     claimedBy: item.claimedBy || null,
-    foundItem: item,
+    lostItem: null,
+    foundItem: {
+      ...item.toObject(),
+      type: "found",
+    },
     claimInfo: {
       imageUuid: null,
       contactNumber: item.contactNumber || null,
@@ -349,7 +364,7 @@ const getAllClaimedItem = async () => {
     createdAt: item.createdAt,
   }));
 
-  // 4️⃣ Merge and sort all claimed records
+  // 5️⃣ Merge and sort all claimed records
   const allClaims = [...formattedMatched, ...formattedStandalone].sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
