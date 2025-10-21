@@ -16,7 +16,9 @@ const isMatch = (lost, found) => {
 const createOrUpdateMatch = async (item) => {
   let matched = null;
 
+  // 🟢 CASE 1: Item is a FOUND item
   if (item.found) {
+    // only consider LOST items that are not yet matched
     const lostItems = await Item.find({ found: false, matched: false });
     for (let lost of lostItems) {
       if (isMatch(lost, item)) {
@@ -31,7 +33,7 @@ const createOrUpdateMatch = async (item) => {
           { new: true, upsert: true }
         )
           .populate("lostItem")
-          .populate("foundItem"); // populate so we can access emails
+          .populate("foundItem");
 
         if (matched.status === "matched") {
           await Item.findByIdAndUpdate(item._id, { matched: true });
@@ -71,7 +73,14 @@ const createOrUpdateMatch = async (item) => {
       }
     }
   } else {
-    const foundItems = await Item.find({ found: true, matched: false });
+    // 🟢 CASE 2: Item is a LOST item
+    // only consider FOUND items that are not matched AND not claimed
+    const foundItems = await Item.find({
+      found: true,
+      matched: false,
+      claimed: false, // 🚫 don't match already claimed found items
+    });
+
     for (let found of foundItems) {
       if (isMatch(item, found)) {
         const pendingRecord = await MatchedItem.findOne({
@@ -126,7 +135,7 @@ const createOrUpdateMatch = async (item) => {
     }
   }
 
-  // fresh item check
+  // 🟢 CASE 3: If no match found, create a pending record
   const freshItem = await Item.findById(item._id);
 
   if (!freshItem.matched) {
@@ -151,11 +160,12 @@ const claimMatchedItem = async (
 ) => {
   if (!currentUser) throw new Error("Please login to claim items");
 
+  // Try to find MatchedItem by ID first
   let matchedItem = await MatchedItem.findById(matchedItemIdOrFoundItemId)
     .populate("lostItem")
     .populate("foundItem");
 
-  // 🟢 CASE 1: Found item (no match)
+  // 🟢 CASE 1: Claiming a FOUND ITEM directly
   if (!matchedItem) {
     const foundItem = await Item.findById(matchedItemIdOrFoundItemId);
     if (!foundItem || !foundItem.found)
@@ -163,22 +173,65 @@ const claimMatchedItem = async (
 
     if (foundItem.claimed)
       throw new Error("This found item has already been claimed");
-    if (foundItem.matched)
-      throw new Error(
-        "This item is already matched; please claim through matched list"
-      );
+
     if (!code) throw new Error("Pin code is required");
     if (code !== "111111") throw new Error("Pin code is not valid");
 
-    // 🟢 Mark claimed
-    await foundItem.updateOne({ claimed: true });
-
-    // ✅ Store claim info (optional: could be stored in Item model as well)
     const time = claimInfo.timeOfClaim
       ? new Date(claimInfo.timeOfClaim)
       : new Date();
 
-    // 📧 Notify
+    // 🟡 Step 1: Check if found item exists in a pending MatchedItem
+    const pendingMatch = await MatchedItem.findOne({
+      foundItem: foundItem._id,
+      status: "pending",
+    });
+
+    // 🟢 Step 2: If pending match exists, update both
+    if (pendingMatch) {
+      foundItem.claimed = true;
+      foundItem.claimInfo = {
+        firstName: claimInfo.firstName || null,
+        lastName: claimInfo.lastName || null,
+        contactNumber: claimInfo.contactNumber || null,
+        timeOfClaim: time,
+        imageUuid: claimInfo.imageUuid || null,
+      };
+
+      pendingMatch.status = "claimed";
+      pendingMatch.claimedBy = currentUser._id;
+      pendingMatch.claimInfo = foundItem.claimInfo;
+
+      await foundItem.save();
+      await pendingMatch.save();
+
+      if (foundItem.email) {
+        await sendEmail(
+          foundItem.email,
+          "Found Item Claimed",
+          `Hi ${foundItem.firstName}, your found item (${foundItem.category}) has been successfully claimed.`
+        );
+      }
+
+      return {
+        status: "claimed (pending match updated)",
+        foundItem,
+        matchedItem: pendingMatch,
+      };
+    }
+
+    // 🟢 Step 3: If no match record exists, handle as standalone claim
+    foundItem.claimed = true;
+    foundItem.claimInfo = {
+      firstName: claimInfo.firstName || null,
+      lastName: claimInfo.lastName || null,
+      contactNumber: claimInfo.contactNumber || null,
+      timeOfClaim: time,
+      imageUuid: claimInfo.imageUuid || null,
+    };
+
+    await foundItem.save();
+
     if (foundItem.email) {
       await sendEmail(
         foundItem.email,
@@ -190,17 +243,13 @@ const claimMatchedItem = async (
     return {
       status: "claimed",
       foundItem,
-      claimInfo: {
-        ...claimInfo,
-        timeOfClaim: time,
-      },
     };
   }
 
-  // 🟢 CASE 2: Matched item
-  if (matchedItem.status !== "matched") {
+  // 🟢 CASE 2: Claiming a MATCHED ITEM
+  if (matchedItem.status !== "matched")
     throw new Error("Item is not available for claiming");
-  }
+
   if (!code) throw new Error("Pin code is required");
   if (code !== "111111") throw new Error("Pin code is not valid");
 
@@ -222,7 +271,6 @@ const claimMatchedItem = async (
 
   await matchedItem.save();
 
-  // 📧 Notify users
   if (matchedItem.lostItem?.email) {
     await sendEmail(
       matchedItem.lostItem.email,
@@ -257,11 +305,56 @@ const getPendingItems = async () => {
 };
 
 const getAllClaimedItem = async () => {
-  return await MatchedItem.find({ status: "claimed" })
+  // 1️⃣ Get all claimed matched items
+  const matchedClaims = await MatchedItem.find({ status: "claimed" })
     .populate("lostItem")
     .populate("foundItem")
-    .populate("claimedBy") // so admin can see who claimed it
+    .populate("claimedBy")
     .sort({ updatedAt: -1 });
+
+  // 2️⃣ Get standalone found items that were directly claimed (not matched)
+  const standaloneClaims = await Item.find({
+    found: true,
+    claimed: true,
+    matched: false,
+  }).sort({ updatedAt: -1 });
+
+  // 3️⃣ Normalize data for unified response
+  const formattedMatched = matchedClaims.map((record) => ({
+    _id: record._id,
+    type: "matched",
+    status: record.status,
+    claimedBy: record.claimedBy,
+    lostItem: record.lostItem,
+    foundItem: record.foundItem,
+    claimInfo: record.claimInfo,
+    updatedAt: record.updatedAt,
+    createdAt: record.createdAt,
+  }));
+
+  const formattedStandalone = standaloneClaims.map((item) => ({
+    _id: item._id,
+    type: "standalone",
+    status: "claimed",
+    claimedBy: item.claimedBy || null,
+    foundItem: item,
+    claimInfo: {
+      imageUuid: null,
+      contactNumber: item.contactNumber || null,
+      firstName: item.firstName || null,
+      lastName: item.lastName || null,
+      timeOfClaim: item.updatedAt || null,
+    },
+    updatedAt: item.updatedAt,
+    createdAt: item.createdAt,
+  }));
+
+  // 4️⃣ Merge and sort all claimed records
+  const allClaims = [...formattedMatched, ...formattedStandalone].sort(
+    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+  );
+
+  return allClaims;
 };
 
 const getAllMatchedAndPendingItems = async () => {

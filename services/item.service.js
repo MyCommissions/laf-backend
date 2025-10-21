@@ -205,7 +205,7 @@ const getLostItemsByCategory = async (currentUser, category) => {
 const getFoundItems = async (currentUser) => {
   if (!currentUser) throw new Error("Please login to get found items");
   return await Item.find()
-    .where({ found: true, claimed: false, matched: false })
+    .where({ found: true, claimed: false })
     .sort({ createdAt: -1 });
 };
 
