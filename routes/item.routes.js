@@ -27,6 +27,19 @@ router.post(
   ItemController.createFoundItem
 );
 
+router.put(
+  "/pending/:id",
+  AuthMiddleware.authorize,
+  upload.single("image"), // same as create
+  ItemController.updatePendingItem
+);
+
+router.delete(
+  "/pending/:id",
+  AuthMiddleware.authorize,
+  ItemController.deletePendingItem
+);
+
 // GET : Lost & Found items (with signed image URLs)
 router.get("/lost", AuthMiddleware.authorize, ItemController.getLostItems);
 router.get("/found", AuthMiddleware.authorize, ItemController.getFoundItems);

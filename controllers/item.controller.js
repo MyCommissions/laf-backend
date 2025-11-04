@@ -154,6 +154,57 @@ const getFoundItemsByCategory = async (req, res) => {
   }
 };
 
+const updatePendingItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = Validation.updateItemSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        status: "fail",
+        message: result.error.errors[0].message,
+      });
+    }
+
+    const updatedItem = await ItemService.updatePendingItem(
+      id,
+      result.data,
+      req.user,
+      req.file // pass file for image replacement
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Pending item updated successfully!",
+      updatedItem,
+    });
+  } catch (error) {
+    handleError(res, error, {
+      "Please login to update a pending item": 401,
+      "Pending item not found or already matched/claimed": 404,
+    });
+  }
+};
+
+const deletePendingItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedItem = await ItemService.deletePendingItem(id, req.user);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Item deleted successfully!",
+      deletedItem,
+    });
+  } catch (error) {
+    handleError(res, error, {
+      "Please login to delete an item": 401,
+      "Item not found or already matched": 404,
+    });
+  }
+};
+
 module.exports = {
   createLostItem,
   createFoundItem,
@@ -162,4 +213,6 @@ module.exports = {
   getFoundItems,
   getLostItemsByCategory,
   getFoundItemsByCategory,
+  updatePendingItem,
+  deletePendingItem,
 };

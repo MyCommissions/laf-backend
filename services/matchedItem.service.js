@@ -406,7 +406,6 @@ const getAllMatchedAndPendingItems = async () => {
   return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
-
 module.exports = {
   createOrUpdateMatch,
   claimMatchedItem,
