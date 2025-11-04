@@ -223,6 +223,86 @@ const getFoundItemsByCategory = async (currentUser, category) => {
   }).sort({ createdAt: -1 });
 };
 
+const updatePendingItem = async (id, data, currentUser, file) => {
+  if (!currentUser) throw new Error("Please login to update a pending item");
+
+  const item = await Item.findOne({ _id: id, matched: false, claimed: false });
+  if (!item)
+    throw new Error("Pending item not found or already matched/claimed");
+
+  await categoryMatch(data);
+
+  // Handle image replacement logic
+  let imageKey = item.imageUrl; // keep old by default
+
+  if (file) {
+    try {
+      // 1️⃣ Delete old image from R2
+      if (item.imageUrl) await uploadService.deleteFromR2(item.imageUrl);
+
+      // 2️⃣ Upload new image to R2
+      imageKey = await uploadService.uploadToR2(file);
+    } catch (err) {
+      console.warn("⚠️ Image update failed:", err.message);
+    }
+  }
+
+  const {
+    firstName,
+    lastName,
+    contactNumber,
+    email,
+    category,
+    moneyAmount,
+    itemSize,
+    itemColor,
+    brandType,
+    uniqueIdentifier,
+    remarks,
+  } = data;
+
+  // 3️⃣ Update DB record
+  const updatedItem = await Item.findByIdAndUpdate(
+    id,
+    {
+      firstName,
+      lastName,
+      contactNumber,
+      email,
+      category,
+      imageUrl: imageKey,
+      moneyAmount,
+      itemSize,
+      itemColor,
+      brandType,
+      uniqueIdentifier,
+      remarks,
+    },
+    { new: true }
+  );
+
+  return updatedItem;
+};
+
+const deletePendingItem = async (id, currentUser) => {
+  if (!currentUser) throw new Error("Please login to delete an item");
+
+  const item = await Item.findOne({ _id: id, matched: false });
+  if (!item) throw new Error("Item not found or already matched");
+
+  // Delete image from Cloudflare R2 (if it exists)
+  if (item.imageUrl) {
+    try {
+      await deleteFromR2(item.imageUrl);
+    } catch (err) {
+      console.warn("Failed to delete image from R2:", err.message);
+    }
+  }
+
+  await Item.findByIdAndDelete(id);
+  return item;
+};
+
 module.exports = {
   createLostItem,
   createFoundItem,
@@ -231,4 +311,6 @@ module.exports = {
   getFoundItems,
   getLostItemsByCategory,
   getFoundItemsByCategory,
+  updatePendingItem,
+  deletePendingItem,
 };

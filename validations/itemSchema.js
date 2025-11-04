@@ -44,18 +44,19 @@ const createItemSchema = z.object({
     .optional(),
 
   brandType: z.string().optional(),
-
   uniqueIdentifier: z.string().optional(),
-
   remarks: z.string().optional(),
 
   found: z.coerce.boolean().optional().default(false),
-
   claimed: z.coerce.boolean().optional().default(false),
 
   placeLost: z.string().optional().default(""),
   placeFound: z.string().optional().default(""),
   foundAt: z.string().datetime("Invalid date format").optional(),
+});
+
+const updateItemSchema = createItemSchema.partial().extend({
+  imageKey: z.string().optional(), // allow image UUID
 });
 
 const claimLostItemSchema = z.object({
@@ -78,11 +79,12 @@ const claimLostItemSchema = z.object({
     lastName: z
       .string({ required_error: "Last name is required" })
       .min(1, "Last name cannot be empty"),
-    timeOfClaim: z.string().datetime().optional(), // frontend may send ISO timestamp
+    timeOfClaim: z.string().datetime().optional(),
   }),
 });
 
 module.exports = {
   createItemSchema,
+  updateItemSchema,
   claimLostItemSchema,
 };
