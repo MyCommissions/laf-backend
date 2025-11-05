@@ -158,19 +158,10 @@ const updatePendingItem = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = Validation.updateItemSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({
-        status: "fail",
-        message: result.error.errors[0].message,
-      });
-    }
-
     const updatedItem = await ItemService.updatePendingItem(
       id,
-      result.data,
-      req.user,
-      req.file // pass file for image replacement
+      req.body,
+      req.user
     );
 
     return res.status(200).json({
