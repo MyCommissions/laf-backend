@@ -223,7 +223,7 @@ const getFoundItemsByCategory = async (currentUser, category) => {
   }).sort({ createdAt: -1 });
 };
 
-const updatePendingItem = async (id, data, currentUser, file) => {
+const updatePendingItem = async (id, data, currentUser) => {
   if (!currentUser) throw new Error("Please login to update a pending item");
 
   const item = await Item.findOne({ _id: id, matched: false, claimed: false });
@@ -231,21 +231,6 @@ const updatePendingItem = async (id, data, currentUser, file) => {
     throw new Error("Pending item not found or already matched/claimed");
 
   await categoryMatch(data);
-
-  // Handle image replacement logic
-  let imageKey = item.imageUrl; // keep old by default
-
-  if (file) {
-    try {
-      // 1️⃣ Delete old image from R2
-      if (item.imageUrl) await uploadService.deleteFromR2(item.imageUrl);
-
-      // 2️⃣ Upload new image to R2
-      imageKey = await uploadService.uploadToR2(file);
-    } catch (err) {
-      console.warn("⚠️ Image update failed:", err.message);
-    }
-  }
 
   const {
     firstName,
@@ -270,7 +255,6 @@ const updatePendingItem = async (id, data, currentUser, file) => {
       contactNumber,
       email,
       category,
-      imageUrl: imageKey,
       moneyAmount,
       itemSize,
       itemColor,

@@ -30,7 +30,6 @@ router.post(
 router.put(
   "/pending/:id",
   AuthMiddleware.authorize,
-  upload.single("image"), // same as create
   ItemController.updatePendingItem
 );
 

@@ -55,10 +55,6 @@ const createItemSchema = z.object({
   foundAt: z.string().datetime("Invalid date format").optional(),
 });
 
-const updateItemSchema = createItemSchema.partial().extend({
-  imageKey: z.string().optional(), // allow image UUID
-});
-
 const claimLostItemSchema = z.object({
   pin: z.object({
     code: z
@@ -85,6 +81,5 @@ const claimLostItemSchema = z.object({
 
 module.exports = {
   createItemSchema,
-  updateItemSchema,
   claimLostItemSchema,
 };
