@@ -16,8 +16,7 @@ const categoryMatch = async (data) => {
         if (
           data.moneyAmount ||
           data.brandType ||
-          data.uniqueIdentifier ||
-          data.remarks
+          data.uniqueIdentifier
         )
           throw new Error(
             "Only Item Size and Item Color are allowed for Umbrella"
@@ -32,7 +31,7 @@ const categoryMatch = async (data) => {
       if (!data.itemColor) throw new Error("Item Color is required for Wallet");
       if (!data.brandType) throw new Error("Brand Type is required for Wallet");
       else {
-        if (data.uniqueIdentifier || data.remarks)
+        if (data.uniqueIdentifier)
           throw new Error(
             "Only Money Amount, Item Size, Item Color, and Brand Type are allowed for Wallet"
           );
@@ -46,7 +45,7 @@ const categoryMatch = async (data) => {
           "Unique Identifier (IMEI/serial) is required for Phone"
         );
       else {
-        if (data.itemSize || data.itemColor || data.moneyAmount || data.remarks)
+        if (data.itemSize || data.itemColor || data.moneyAmount)
           throw new Error(
             "Only Brand Type and Unique Identifier are allowed for Phone"
           );
@@ -63,8 +62,7 @@ const categoryMatch = async (data) => {
           data.itemSize ||
           data.itemColor ||
           data.moneyAmount ||
-          data.brandType ||
-          data.remarks
+          data.brandType
         )
           throw new Error("Only Unique Identifier is allowed for Keys");
       }
@@ -78,8 +76,7 @@ const categoryMatch = async (data) => {
           data.itemSize ||
           data.itemColor ||
           data.moneyAmount ||
-          data.brandType ||
-          data.remarks
+          data.brandType
         )
           throw new Error("Only Unique Identifier is allowed for ID");
       }
@@ -93,8 +90,7 @@ const categoryMatch = async (data) => {
           data.itemSize ||
           data.itemColor ||
           data.brandType ||
-          data.uniqueIdentifier ||
-          data.remarks
+          data.uniqueIdentifier
         )
           throw new Error("Only Money Amount is allowed for Cash");
       }
