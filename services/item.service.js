@@ -11,6 +11,18 @@ const categoryMatch = async (data) => {
       if (!data.itemSize) throw new Error("Item Size is required for Umbrella");
       if (!data.itemColor)
         throw new Error("Item Color is required for Umbrella");
+      else {
+        // Restrict adding other fields
+        if (
+          data.moneyAmount ||
+          data.brandType ||
+          data.uniqueIdentifier ||
+          data.remarks
+        )
+          throw new Error(
+            "Only Item Size and Item Color are allowed for Umbrella"
+          );
+      }
       break;
 
     case "Wallet":
@@ -19,6 +31,12 @@ const categoryMatch = async (data) => {
       if (!data.itemSize) throw new Error("Item Size is required for Wallet");
       if (!data.itemColor) throw new Error("Item Color is required for Wallet");
       if (!data.brandType) throw new Error("Brand Type is required for Wallet");
+      else {
+        if (data.uniqueIdentifier || data.remarks)
+          throw new Error(
+            "Only Money Amount, Item Size, Item Color, and Brand Type are allowed for Wallet"
+          );
+      }
       break;
 
     case "Phone":
@@ -27,6 +45,12 @@ const categoryMatch = async (data) => {
         throw new Error(
           "Unique Identifier (IMEI/serial) is required for Phone"
         );
+      else {
+        if (data.itemSize || data.itemColor || data.moneyAmount || data.remarks)
+          throw new Error(
+            "Only Brand Type and Unique Identifier are allowed for Phone"
+          );
+      }
       break;
 
     case "Keys":
@@ -34,21 +58,52 @@ const categoryMatch = async (data) => {
         throw new Error(
           "Unique Identifier (key type/description) is required for Keys"
         );
+      else {
+        if (
+          data.itemSize ||
+          data.itemColor ||
+          data.moneyAmount ||
+          data.brandType ||
+          data.remarks
+        )
+          throw new Error("Only Unique Identifier is allowed for Keys");
+      }
       break;
 
     case "ID":
       if (!data.uniqueIdentifier)
-        throw new Error("Unique Identifier is required for ID (ID number)");
+        throw new Error("Unique Identifier (ID number) is required for ID");
+      else {
+        if (
+          data.itemSize ||
+          data.itemColor ||
+          data.moneyAmount ||
+          data.brandType ||
+          data.remarks
+        )
+          throw new Error("Only Unique Identifier is allowed for ID");
+      }
       break;
 
     case "Cash":
       if (!data.moneyAmount || data.moneyAmount <= 0)
         throw new Error("Money Amount is required for Cash");
+      else {
+        if (
+          data.itemSize ||
+          data.itemColor ||
+          data.brandType ||
+          data.uniqueIdentifier ||
+          data.remarks
+        )
+          throw new Error("Only Money Amount is allowed for Cash");
+      }
       break;
 
     case "Others":
       if (!data.remarks)
         throw new Error("Remarks/Description is required for Others");
+      // No restrictions for others category
       break;
 
     default:
