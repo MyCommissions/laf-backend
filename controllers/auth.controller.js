@@ -248,6 +248,9 @@ const updateUser = async (req, res) => {
       "Please login to update a user": 401,
       "You are not authorized to update this user": 403,
       "Email already in use": 409,
+      "Current password is required to change your password": 400,
+      "Current password is incorrect": 400,
+      "New password and confirm password do not match": 400,
     };
 
     if (knownErrors[error.message]) {
@@ -271,11 +274,53 @@ const updateUser = async (req, res) => {
   }
 };
 
+const getUsersByRole = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Not authenticated",
+      });
+    }
+
+    const roleId = req.query.roleId; // e.g., 1 for admin, 2 for user
+    if (!roleId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "roleId query parameter is required",
+      });
+    }
+
+    const users = await AuthService.getUsersByRole(roleId);
+
+    return res.status(200).json({
+      status: "success",
+      data: users.map((user) => ({
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        mobile: user.mobile,
+        profile_picture: user.profile_picture,
+        role: user.roleId,
+      })),
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAccount,
   signUp,
   login,
   logout,
   getCurrentUser,
-  updateUser
+  updateUser,
+  getUsersByRole,
 };

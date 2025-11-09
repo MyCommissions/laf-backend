@@ -94,41 +94,71 @@ const getCurrentUser = async (userId) => {
 const updateUser = async (userId, data, currentUser) => {
   const user = await User.findById(userId);
   if (!user) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   if (!currentUser) {
-    throw new Error('Please login to update a user');
+    throw new Error("Please login to update a user");
   }
 
   // Only admin can update others or roles
-  if (currentUser.roleId !== ROLES.ADMIN && currentUser._id.toString() !== userId) {
-    throw new Error('You are not authorized to update this user');
+  const isAdmin = currentUser.roleId === ROLES.ADMIN;
+  if (!isAdmin && currentUser._id.toString() !== userId) {
+    throw new Error("You are not authorized to update this user");
   }
 
-  const { firstname, lastname, email, roleId, password } = data;
+  const {
+    firstname,
+    lastname,
+    email,
+    roleId,
+    currentPassword,
+    newPassword,
+    confirmPassword,
+  } = data;
 
-  // If email is being changed, ensure it’s unique
+  // Email uniqueness check
   if (email && email !== user.email) {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new Error('Email already in use');
+      throw new Error("Email already in use");
     }
     user.email = email;
   }
 
-  // Update allowed fields
+  // Update basic fields
   if (firstname) user.firstname = firstname;
   if (lastname) user.lastname = lastname;
 
   // Only admins can change roles
-  if (roleId && currentUser.roleId === ROLES.ADMIN) {
+  if (roleId && isAdmin) {
+    if (![ROLES.ADMIN, ROLES.STAFF].includes(roleId)) {
+      throw new Error("Role ID must be either 1 (Admin) or 2 (Staff)");
+    }
     user.roleId = roleId;
   }
 
-  // Hash password if provided
-  if (password) {
-    const hashedPassword = await bcrypt.hash(password, 10);
+  // Handle password change
+  if (newPassword || confirmPassword) {
+    if (!newPassword || !confirmPassword) {
+      throw new Error("Both newPassword and confirmPassword are required");
+    }
+
+    if (newPassword !== confirmPassword) {
+      throw new Error("New password and confirm password do not match");
+    }
+
+    if (!currentPassword) {
+      throw new Error("Current password is required to change your password");
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new Error("Current password is incorrect");
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
   }
 
@@ -136,18 +166,12 @@ const updateUser = async (userId, data, currentUser) => {
   return { user };
 };
 
-const deleteUser = async (userId, currentUser) => {
-  if (!currentUser || currentUser.roleId !== ROLES.ADMIN) {
-    throw new Error('Only admin can delete users');
+const getUsersByRole = async (roleId) => {
+  const users = await User.find({ roleId }).select("-password");
+  if (!users || users.length === 0) {
+    throw new Error("No users found for this role");
   }
-
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  await User.findByIdAndDelete(userId);
-  return { message: 'User deleted successfully' };
+  return users;
 };
 
 module.exports = {
@@ -156,5 +180,5 @@ module.exports = {
   login,
   getCurrentUser,
   updateUser,
-  deleteUser,
+  getUsersByRole,
 };
