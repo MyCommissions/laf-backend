@@ -91,12 +91,70 @@ const getCurrentUser = async (userId) => {
   return user;
 };
 
-const updateUser = async (userId, data) => {
+const updateUser = async (userId, data, currentUser) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
-}
+  if (!currentUser) {
+    throw new Error('Please login to update a user');
+  }
 
-const deleteUser = async (userId) => {
+  // Only admin can update others or roles
+  if (currentUser.roleId !== ROLES.ADMIN && currentUser._id.toString() !== userId) {
+    throw new Error('You are not authorized to update this user');
+  }
 
-}
+  const { firstname, lastname, email, roleId, password } = data;
 
-module.exports = { createAccount, signUp, login, getCurrentUser };
+  // If email is being changed, ensure it’s unique
+  if (email && email !== user.email) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('Email already in use');
+    }
+    user.email = email;
+  }
+
+  // Update allowed fields
+  if (firstname) user.firstname = firstname;
+  if (lastname) user.lastname = lastname;
+
+  // Only admins can change roles
+  if (roleId && currentUser.roleId === ROLES.ADMIN) {
+    user.roleId = roleId;
+  }
+
+  // Hash password if provided
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+  }
+
+  await user.save();
+  return { user };
+};
+
+const deleteUser = async (userId, currentUser) => {
+  if (!currentUser || currentUser.roleId !== ROLES.ADMIN) {
+    throw new Error('Only admin can delete users');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  await User.findByIdAndDelete(userId);
+  return { message: 'User deleted successfully' };
+};
+
+module.exports = {
+  createAccount,
+  signUp,
+  login,
+  getCurrentUser,
+  updateUser,
+  deleteUser,
+};

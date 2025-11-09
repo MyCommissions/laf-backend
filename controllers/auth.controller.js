@@ -210,10 +210,72 @@ const logout = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const result = Validation.updateUserSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        status: "fail",
+        message: result.error.errors[0].message,
+      });
+    }
+
+    const updated = await AuthService.updateUser(
+      req.params.id,
+      result.data,
+      req.user
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "User updated successfully",
+      data: {
+        user: {
+          id: updated.user._id,
+          firstname: updated.user.firstname,
+          lastname: updated.user.lastname,
+          email: updated.user.email,
+          role: updated.user.roleId,
+        },
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    const knownErrors = {
+      "User not found": 404,
+      "Please login to update a user": 401,
+      "You are not authorized to update this user": 403,
+      "Email already in use": 409,
+    };
+
+    if (knownErrors[error.message]) {
+      return res.status(knownErrors[error.message]).json({
+        status: "fail",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        status: "fail",
+        message: error.errors.map((e) => e.message),
+      });
+    }
+
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAccount,
   signUp,
   login,
   logout,
-  getCurrentUser
+  getCurrentUser,
+  updateUser
 };

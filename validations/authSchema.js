@@ -54,8 +54,30 @@ const loginSchema = z.object({
 
 })
 
+const updateUserSchema = z.object({
+  firstname: z.string().min(1, "Firstname cannot be empty").optional(),
+  lastname: z.string().min(1, "Lastname cannot be empty").optional(),
+  email: z.string().email("Invalid email format").optional(),
+  roleId: z.union([z.literal(1), z.literal(2)], {
+    errorMap: () => ({
+      message: "Role ID must be either 1 (Admin) or 2 (Staff)",
+    }),
+  }),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long")
+    .regex(
+      REGEX.oneUpperCase,
+      "Password must contain at least one uppercase letter"
+    )
+    .regex(REGEX.oneNumber, "Password must contain at least one number")
+    .optional(),
+});
+
+
 module.exports = {
-    createAccountSchema,
-    signUpSchema,
-    loginSchema
-}
+  createAccountSchema,
+  signUpSchema,
+  loginSchema,
+  updateUserSchema,
+};
