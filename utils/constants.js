@@ -1,4 +1,4 @@
-const CATEGORIES = ["Umbrella", "Wallet", "Cash", "Phone", "ID", "Others"];
+const CATEGORIES = ["Accessories", "Documents", "Umbrella", "Wallet", "Cash", "Gadgets", "ID", "Keys", "Others"];
 
 module.exports = {
     CATEGORIES
