@@ -7,17 +7,42 @@ const { sendEmail } = require("../services/email.service");
 // Validate category-specific fields
 const categoryMatch = async (data) => {
   switch (data.category) {
+    case "Accessories":
+      if (!data.itemSize) throw new Error("Item Size is required for Accessories");
+      if (!data.itemColor)
+        throw new Error("Item Color is required for Accessories");
+      if (!data.brandType)
+        throw new Error("Brand Name is required for Accessories");
+      else {
+        // Restrict adding other fields
+        if (data.moneyAmount || data.uniqueIdentifier)
+          throw new Error(
+            "Only Item Size, Item Color and Brand Name are allowed for Accessories"
+          );
+      }
+      break;
+
+    case "Documents":
+      if (!data.itemColor)
+        throw new Error("Item Color is required for Documents");
+      if (!data.brandType)
+        throw new Error("Brand Name is required for Documents");
+      else {
+        // Restrict adding other fields
+        if (data.moneyAmount || data.uniqueIdentifier || data.itemSize)
+          throw new Error(
+            "Only Brand Name and Item Color are allowed for Documents"
+          );
+      }
+      break;
+
     case "Umbrella":
       if (!data.itemSize) throw new Error("Item Size is required for Umbrella");
       if (!data.itemColor)
         throw new Error("Item Color is required for Umbrella");
       else {
         // Restrict adding other fields
-        if (
-          data.moneyAmount ||
-          data.brandType ||
-          data.uniqueIdentifier
-        )
+        if (data.moneyAmount || data.brandType || data.uniqueIdentifier)
           throw new Error(
             "Only Item Size and Item Color are allowed for Umbrella"
           );
@@ -29,42 +54,42 @@ const categoryMatch = async (data) => {
         throw new Error("Money Amount is required for Wallet");
       if (!data.itemSize) throw new Error("Item Size is required for Wallet");
       if (!data.itemColor) throw new Error("Item Color is required for Wallet");
-      if (!data.brandType) throw new Error("Brand Type is required for Wallet");
+      if (!data.brandType) throw new Error("Brand Name is required for Wallet");
       else {
         if (data.uniqueIdentifier)
           throw new Error(
-            "Only Money Amount, Item Size, Item Color, and Brand Type are allowed for Wallet"
+            "Only Money Amount, Item Size, Item Color, and Brand Name are allowed for Wallet"
           );
       }
       break;
 
-    case "Phone":
-      if (!data.brandType) throw new Error("Brand Type is required for Phone");
+    case "Gadgets":
+      if (!data.brandType) throw new Error("Brand Name is required for Gadgets");
       if (!data.uniqueIdentifier)
         throw new Error(
-          "Unique Identifier (IMEI/serial) is required for Phone"
+          "Unique Identifier (IMEI/serial) is required for Gadgets"
         );
       else {
         if (data.itemSize || data.itemColor || data.moneyAmount)
           throw new Error(
-            "Only Brand Type and Unique Identifier are allowed for Phone"
+            "Only Brand Type and Unique Identifier are allowed for Gadgets"
           );
       }
       break;
 
     case "Keys":
-      if (!data.uniqueIdentifier)
+      if (!data.itemSize) throw new Error("Item Size is required for Keys");
+      if (!data.brandType)
         throw new Error(
-          "Unique Identifier (key type/description) is required for Keys"
+          "Brande Name is required for Keys"
         );
       else {
         if (
-          data.itemSize ||
           data.itemColor ||
           data.moneyAmount ||
-          data.brandType
+          data.uniqueIdentifier
         )
-          throw new Error("Only Unique Identifier is allowed for Keys");
+          throw new Error("Only Brand Name and Item Size are allowed for Keys");
       }
       break;
 
