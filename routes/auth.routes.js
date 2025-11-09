@@ -27,4 +27,12 @@ router.put("/update/:id", AuthMiddleware.authorize, AuthController.updateUser);
 // POST : LOGOUT (Authenticated)
 router.post("/logout", AuthMiddleware.authorize, AuthController.logout);
 
+// ✅ GET : USERS BY ROLE (Admin only)
+router.get(
+  "/users",
+  AuthMiddleware.authorize,
+  AuthMiddleware.hasRole(ROLES.ADMIN),
+  AuthController.getUsersByRole
+);
+
 module.exports = router;
