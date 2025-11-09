@@ -21,7 +21,7 @@ const itemSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Umbrella", "Wallet", "Cash", "Phone", "ID", "Others"],
+      enum: ["Accessories", "Documents", "Umbrella", "Wallet", "Cash", "Gadgets", "ID", "Keys", "Others"],
     },
     imageUrl: {
       type: String,

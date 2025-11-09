@@ -13,11 +13,13 @@ const categoryMatch = async (data) => {
         throw new Error("Item Color is required for Accessories");
       if (!data.brandType)
         throw new Error("Brand Name is required for Accessories");
+      if (!data.uniqueIdentifier)
+        throw new Error("Unique Identifier is required for Accessories");
       else {
         // Restrict adding other fields
-        if (data.moneyAmount || data.uniqueIdentifier)
+        if (data.moneyAmount)
           throw new Error(
-            "Only Item Size, Item Color and Brand Name are allowed for Accessories"
+            "Only Item Size, Item Color, Unique Identifier and Brand Name are allowed for Accessories"
           );
       }
       break;
