@@ -379,7 +379,6 @@ const getAllMatchedAndPendingItems = async () => {
     .populate("lostItem")
     .populate("foundItem");
 
-  // Build unified list with status included
   const items = [];
 
   matchedAndPending.forEach((record) => {
@@ -389,7 +388,26 @@ const getAllMatchedAndPendingItems = async () => {
       items.push({
         ...record.lostItem.toObject(),
         status,
-        type: "lost", // optional: to know which side the item belongs to
+        type: "lost",
+        matchedWith: record.foundItem
+          ? {
+              _id: record.foundItem._id,
+              firstName: record.foundItem.firstName,
+              lastName: record.foundItem.lastName,
+              email: record.foundItem.email,
+              contactNumber: record.foundItem.contactNumber,
+              createdAt: record.foundItem.createdAt,
+              category: record.foundItem.category,
+              itemColor: record.foundItem.itemColor,
+              itemSize: record.foundItem.itemSize,
+              brandType: record.foundItem.brandType,
+              uniqueIdentifier: record.foundItem.uniqueIdentifier,
+              imageUrl: record.foundItem.imageUrl,
+              moneyAmount: record.foundItem.moneyAmount,
+              status: "matched",
+              type: "found",
+            }
+          : null,
       });
     }
 
@@ -398,13 +416,34 @@ const getAllMatchedAndPendingItems = async () => {
         ...record.foundItem.toObject(),
         status,
         type: "found",
+        matchedWith: record.lostItem
+          ? {
+              _id: record.lostItem._id,
+              firstName: record.lostItem.firstName,
+              lastName: record.lostItem.lastName,
+              email: record.lostItem.email,
+              contactNumber: record.lostItem.contactNumber,
+              createdAt: record.lostItem.createdAt,
+              category: record.lostItem.category,
+              itemColor: record.lostItem.itemColor,
+              itemSize: record.lostItem.itemSize,
+              brandType: record.lostItem.brandType,
+              uniqueIdentifier: record.lostItem.uniqueIdentifier,
+              imageUrl: record.lostItem.imageUrl,
+              moneyAmount: record.lostItem.moneyAmount,
+              status: "matched",
+              type: "lost",
+            }
+          : null,
       });
     }
   });
 
-  // Sort newest first
-  return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return items.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 };
+
 
 module.exports = {
   createOrUpdateMatch,
