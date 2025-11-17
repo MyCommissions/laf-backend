@@ -31,15 +31,21 @@ const createItemSchema = z.object({
 
   itemColor: z
     .enum([
-      "Red",
-      "Orange",
-      "Yellow",
-      "Green",
-      "Blue",
-      "Indigo",
-      "Violet",
       "Black",
       "White",
+      "Gray",
+      "Blue",
+      "Red",
+      "Green",
+      "Yellow",
+      "Brown",
+      "Pink",
+      "Purple",
+      "Orange",
+      "Gold",
+      "Silver",
+      "Beige / Cream",
+      "Transparent / Clear",
     ])
     .optional(),
 
