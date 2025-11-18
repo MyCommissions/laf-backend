@@ -1,0 +1,118 @@
+const mongoose = require("mongoose");
+
+const itemSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    contactNumber: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: [
+        "Accessories",
+        "Documents",
+        "Umbrella",
+        "Wallet",
+        "Cash",
+        "Gadgets",
+        "ID",
+        "Keys",
+        "Others",
+      ],
+    },
+    imageUrl: {
+      type: String,
+    },
+    moneyAmount: {
+      type: Number,
+      default: 0,
+    },
+    itemSize: {
+      type: String,
+      enum: ["Small", "Medium", "Large"],
+    },
+    itemColor: {
+      type: String,
+      enum: [
+        "Black",
+        "White",
+        "Gray",
+        "Blue",
+        "Red",
+        "Green",
+        "Yellow",
+        "Brown",
+        "Pink",
+        "Purple",
+        "Orange",
+        "Gold",
+        "Silver",
+        "Beige / Cream",
+        "Transparent / Clear",
+      ],
+    },
+    brandType: {
+      type: String,
+    },
+    uniqueIdentifier: {
+      type: String,
+    },
+    remarks: {
+      type: String,
+    },
+    found: {
+      type: Boolean,
+      default: false,
+    },
+    claimed: {
+      type: Boolean,
+      default: false,
+    },
+    matched: {
+      type: Boolean,
+      default: false,
+    },
+
+    // 🟢 New field for claim information
+    claimInfo: {
+      imageUuid: {
+        type: String,
+        default: null,
+      },
+      contactNumber: {
+        type: String,
+        default: null,
+      },
+      firstName: {
+        type: String,
+        default: null,
+      },
+      lastName: {
+        type: String,
+        default: null,
+      },
+      timeOfClaim: {
+        type: Date,
+        default: null,
+      },
+    },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+const Item = mongoose.model("Item", itemSchema);
+
+module.exports = Item;

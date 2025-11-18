@@ -1,63 +1,54 @@
-const jwt = require('jsonwebtoken');
-const { ROLES } = require('../utils/roles');
+const jwt = require("jsonwebtoken");
+const { ROLES } = require("../utils/roles");
 
-const authorize = async (req, res, next) => {
+const authorize = (req, res, next) => {
+  const token = req.cookies.token; // ✅ cookie-parser must be installed and used
 
-    const header = req.headers.authorization;
+  if (!token) {
+    return res
+      .status(401)
+      .json({ status: "fail", message: "Unauthorized: No token provided" });
+  }
 
-    if (!header || !header.startsWith("Bearer ")) {
-        return res.status(401).json({
-            status: "fail",
-            message: "Unauthorized"
-        })
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ status: "fail", message: "Unauthorized: Invalid token" });
+  }
+};
 
-    const token = header.split(" ")[1];
-
-    try {
-
-        const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-
-        req.user = decoded;
-
-        next();
-
-    } catch (error) {
-        
-        console.log(error);
-
-        if (error.message === 'jwt expired') {
-            return res.status(401).json({
-                status: "fail",
-                message: "Token expired"
-            })
-        }
-
-        if (error.message === 'invalid signature') {
-            return res.status(401).json({
-                status: "fail",
-                message: "Invalid token"
-            })
-        }
-
-    }
-
-}
 
 const hasRole = (role) => {
-    return (req, res, next) => {
-        if (req.user.roleId !== role) {
-            return res.status(403).json({
-                status: 'fail',
-                message: `You do not have permission to access this route`
-            })
-        }
-
-        next();
+  return (req, res, next) => {
+    
+    if (!req.user) {
+      console.log("No user found");
+      return res.status(401).json({
+        status: "fail",
+        message: "Unauthorized: No user found",
+      });
     }
-}
+
+    if (req.user.roleId !== role) {
+      console.log(
+        `Role mismatch. Expected: ${role}, Got: ${req.user.roleId}`
+      );
+      return res.status(403).json({
+        status: "fail",
+        message: "You do not have permission to access this route",
+      });
+    }
+
+    console.log(`Access granted for role: ${req.user.roleId}`);
+    next();
+  };
+};
 
 module.exports = {
-    authorize,
-    hasRole
-}
+  authorize,
+  hasRole,
+};
