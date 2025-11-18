@@ -114,10 +114,10 @@ const login = async (req, res) => {
     { expiresIn: result.rememberMe ? '30d' : '2h' }
   );
 
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: "none",
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
