@@ -22,7 +22,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: "https://claime.site", // <-- your frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // <-- allow cookies to be sent
   })
