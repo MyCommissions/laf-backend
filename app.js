@@ -28,6 +28,14 @@ app.use(
   })
 );
 
+app.options(
+  "*",
+  cors({
+    origin: "https://claime.site",
+    credentials: true,
+  })
+);
+
 app.use(`/api/${VERSION}/auth`, authRoutes);
 app.use(`/api/${VERSION}/item`, itemRoutes);
 
