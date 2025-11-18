@@ -49,5 +49,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on https://claime.site:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
