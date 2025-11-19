@@ -12,8 +12,8 @@ const matchedItemSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "matched", "claimed"],
-      default: "pending",
+      enum: ["unclaimed", "matched", "claimed"],
+      default: "unclaimed",
     },
     claimedBy: {
       type: mongoose.Schema.Types.ObjectId,

@@ -24,7 +24,7 @@ const createOrUpdateMatch = async (item) => {
       if (isMatch(lost, item)) {
         const pendingRecord = await MatchedItem.findOne({
           lostItem: lost._id,
-          status: "pending",
+          status: "unclaimed",
         });
 
         matched = await MatchedItem.findOneAndUpdate(
@@ -85,7 +85,7 @@ const createOrUpdateMatch = async (item) => {
       if (isMatch(item, found)) {
         const pendingRecord = await MatchedItem.findOne({
           foundItem: found._id,
-          status: "pending",
+          status: "unclaimed",
         });
 
         matched = await MatchedItem.findOneAndUpdate(
@@ -144,7 +144,7 @@ const createOrUpdateMatch = async (item) => {
         lostItem: freshItem.found ? null : freshItem._id,
         foundItem: freshItem.found ? freshItem._id : null,
       },
-      { status: "pending" },
+      { status: "unclaimed" },
       { new: true, upsert: true }
     );
   }
@@ -184,7 +184,7 @@ const claimMatchedItem = async (
     // 🟡 Step 1: Check if found item exists in a pending MatchedItem
     const pendingMatch = await MatchedItem.findOne({
       foundItem: foundItem._id,
-      status: "pending",
+      status: "unclaimed",
     });
 
     // 🟢 Step 2: If pending match exists, update both
@@ -298,7 +298,7 @@ const getMatchedItems = async () => {
 };
 
 const getPendingItems = async () => {
-  return await MatchedItem.find({ status: "pending" })
+  return await MatchedItem.find({ status: "unclaimed" })
     .populate("lostItem")
     .populate("foundItem")
     .sort({ createdAt: -1 });
@@ -374,7 +374,7 @@ const getAllClaimedItem = async () => {
 
 const getAllMatchedAndPendingItems = async () => {
   const matchedAndPending = await MatchedItem.find({
-    status: { $in: ["matched", "pending"] },
+    status: { $in: ["matched", "unclaimed"] },
   })
     .populate("lostItem")
     .populate("foundItem");
