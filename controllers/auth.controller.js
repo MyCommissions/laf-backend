@@ -118,7 +118,6 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      domain: ".claime.site",
       path: "/",
       maxAge: 60 * 60 * 1000, // 1 hour
     });
@@ -197,7 +196,6 @@ const logout = async (req, res) => {
       httpOnly: true,
       secure: true, // set to true if HTTPS in production
       sameSite: "none",
-      domain: ".claime.site",
       path: "/",
     });
 
