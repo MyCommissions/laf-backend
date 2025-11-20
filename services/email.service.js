@@ -1,27 +1,30 @@
-const brevo = require("@getbrevo/brevo");
 require("dotenv").config();
+const nodemailer = require("nodemailer");
 
-const apiInstance = new brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(
-  brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false, // for 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-const sendEmail = async (to, subject, html = "") => {
-  const sendSmtpEmail = {
-    sender: { name: "Lost & Found", email: "no-reply@claime.site" },
-    to: [{ email: to }],
-    subject,
-    htmlContent: html,
-  };
+console.log("EMAIL_PASS length:", process.env.EMAIL_PASS?.length); // should be 16
 
+const sendEmail = async (to, subject, text) => {
   try {
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log("📧 Email sent:", response);
-    return response;
+    await transporter.sendMail({
+      from:
+        process.env.EMAIL_FROM || `"Lost & Found" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      text,
+    });
+    console.log(`📧 Email sent to ${to}`);
   } catch (err) {
-    console.error("❌ Email send error:", err);
-    throw err;
+    console.error("❌ Email send failed:", err.message);
   }
 };
 
