@@ -13,7 +13,6 @@ const sendEmail = async (to, subject, text = "", html = "") => {
     const emailParams = new EmailParams()
       .setFrom(sender)
       .setTo([recipient])
-      .setSubject(subject)
       .setText(text)
       .setHtml(html);
 
