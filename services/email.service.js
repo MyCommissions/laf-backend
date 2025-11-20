@@ -1,25 +1,27 @@
-const { Resend } = require("resend");
+const brevo = require("@getbrevo/brevo");
 require("dotenv").config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
-const sendEmail = async (to, subject, text) => {
+const sendEmail = async (to, subject, html = "") => {
+  const sendSmtpEmail = {
+    sender: { name: "Lost & Found", email: "no-reply@claime.site" },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  };
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Lost & Found <onboarding@resend.dev>",
-      to,
-      subject,
-      text,
-    });
-
-    if (error) {
-      console.error("❌ Resend Email Error:", error);
-      return;
-    }
-
-    console.log("📧 Email sent successfully:", data);
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log("📧 Email sent:", response);
+    return response;
   } catch (err) {
-    console.error("❌ Email send failed:", err.message);
+    console.error("❌ Email send error:", err);
+    throw err;
   }
 };
 
