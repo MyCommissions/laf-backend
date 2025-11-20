@@ -1,28 +1,26 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 require("dotenv").config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: Number(process.env.EMAIL_PORT) === 465, // true for 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (to, text = "", html = "") => {
   try {
-    const info = await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
-      to,
-      text,
-      html,
+      to: to,       // string or array of strings
+      text: text,   // plain text
+      html: html,   // HTML content
     });
-    console.log("📧 Email sent successfully:", info.messageId);
-    return info;
+
+    if (error) {
+      console.error("❌ Resend send error:", error);
+      throw new Error(`Resend error: ${error.message}`);
+    }
+
+    console.log("📧 Email sent successfully:", data);
+    return data;
   } catch (err) {
-    console.error("❌ Email send failed:", err.message);
+    console.error("❌ Email send failed:", err);
     throw err;
   }
 };
