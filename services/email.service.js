@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const sendEmail = async (to, subject, text) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM,
+      from: "Lost & Found <no-reply@claime.site>",
       to,
       subject,
       text,
