@@ -1,19 +1,19 @@
-const { Resend } = require("resend");
+const MailerSend = require("@mailersend/mailersend");
 require("dotenv").config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const mailersend = new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
 
 const sendEmail = async (to, subject, text, html) => {
   try {
-    const data = await resend.emails.send({
-      from: process.env.EMAIL_FROM, // e.g. "Lost & Found <send@claime.site>"
-      to,
+    const response = await mailersend.email.send({
+      from: process.env.EMAIL_FROM,
+      to: [to],
       subject,
       text,
       html,
     });
 
-    console.log("📧 Email sent successfully:", data);
+    console.log("📧 Email sent successfully:", response);
   } catch (err) {
     console.error("❌ Email send failed:", err.message);
   }
