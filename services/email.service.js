@@ -1,26 +1,26 @@
-const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
+const { Resend } = require("resend");
 require("dotenv").config();
 
-const mailersend = new MailerSend({
-  apiKey: process.env.MAILERSEND_API_KEY,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const sendEmail = async (to, subject, text = "", html = "") => {
+const sendEmail = async (to, text = "", html = "") => {
   try {
-    const sender = new Sender(process.env.EMAIL_FROM); // can also include name
-    const recipient = new Recipient(to);
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: to, // string or array of strings
+      text: text, // plain text
+      html: html, // HTML content
+    });
 
-    const emailParams = new EmailParams()
-      .setFrom(sender)
-      .setTo([recipient])
-      .setText(text)
-      .setHtml(html);
+    if (error) {
+      console.error("❌ Resend send error:", error);
+      throw new Error(`Resend error: ${error.message}`);
+    }
 
-    const response = await mailersend.email.send(emailParams);
-    console.log("📧 Email sent successfully:", response);
-    return response;
+    console.log("📧 Email sent successfully:", data);
+    return data;
   } catch (err) {
-    console.error("❌ Email send failed:", err.message);
+    console.error("❌ Email send failed:", err);
     throw err;
   }
 };
