@@ -4,12 +4,26 @@ const { sendEmail } = require('../services/email.service');
 
 const isMatch = (lost, found) => {
   return (
+    // Category must match
     lost.category === found.category &&
+    // Item color matches or either is missing
     (!lost.itemColor ||
       !found.itemColor ||
       lost.itemColor === found.itemColor) &&
+    // Item size matches or either is missing
     (!lost.itemSize || !found.itemSize || lost.itemSize === found.itemSize) &&
-    (!lost.brandType || !found.brandType || lost.brandType === found.brandType)
+    // Brand type matches or either is missing
+    (!lost.brandType ||
+      !found.brandType ||
+      lost.brandType === found.brandType) &&
+    // Money amount matches (if any is greater than 0)
+    (!lost.moneyAmount ||
+      !found.moneyAmount ||
+      lost.moneyAmount === found.moneyAmount) &&
+    // Unique identifier matches (if provided)
+    (!lost.uniqueIdentifier ||
+      !found.uniqueIdentifier ||
+      lost.uniqueIdentifier === found.uniqueIdentifier)
   );
 };
 
