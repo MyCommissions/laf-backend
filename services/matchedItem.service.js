@@ -2,28 +2,45 @@ const MatchedItem = require("../models/matchedItem");
 const Item = require("../models/item");
 const { sendEmail } = require('../services/email.service');
 
+const sanitize = (value) => {
+  if (typeof value === "string") {
+    return value.trim().toLowerCase();
+  }
+  return value; // for numbers or undefined
+};
+
 const isMatch = (lost, found) => {
+  // sanitize all comparable fields
+  const lostCategory = sanitize(lost.category);
+  const foundCategory = sanitize(found.category);
+
+  const lostColor = sanitize(lost.itemColor);
+  const foundColor = sanitize(found.itemColor);
+
+  const lostSize = sanitize(lost.itemSize);
+  const foundSize = sanitize(found.itemSize);
+
+  const lostBrand = sanitize(lost.brandType);
+  const foundBrand = sanitize(found.brandType);
+
+  const lostIdentifier = sanitize(lost.uniqueIdentifier);
+  const foundIdentifier = sanitize(found.uniqueIdentifier);
+
   return (
     // Category must match
-    lost.category === found.category &&
-    // Item color matches or either is missing
-    (!lost.itemColor ||
-      !found.itemColor ||
-      lost.itemColor === found.itemColor) &&
-    // Item size matches or either is missing
-    (!lost.itemSize || !found.itemSize || lost.itemSize === found.itemSize) &&
-    // Brand type matches or either is missing
-    (!lost.brandType ||
-      !found.brandType ||
-      lost.brandType === found.brandType) &&
-    // Money amount matches (if any is greater than 0)
+    lostCategory === foundCategory &&
+    // Item color matches or either missing
+    (!lostColor || !foundColor || lostColor === foundColor) &&
+    // Item size matches or either missing
+    (!lostSize || !foundSize || lostSize === foundSize) &&
+    // Brand type matches or either missing
+    (!lostBrand || !foundBrand || lostBrand === foundBrand) &&
+    // Money amount matches or either missing/zero
     (!lost.moneyAmount ||
       !found.moneyAmount ||
       lost.moneyAmount === found.moneyAmount) &&
-    // Unique identifier matches (if provided)
-    (!lost.uniqueIdentifier ||
-      !found.uniqueIdentifier ||
-      lost.uniqueIdentifier === found.uniqueIdentifier)
+    // Unique identifier matches or missing
+    (!lostIdentifier || !foundIdentifier || lostIdentifier === foundIdentifier)
   );
 };
 
