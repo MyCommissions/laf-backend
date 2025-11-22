@@ -3,44 +3,60 @@ const Item = require("../models/item");
 const { sendEmail } = require('../services/email.service');
 
 const sanitize = (value) => {
-  if (typeof value === "string") {
-    return value.trim().toLowerCase();
+  if (!value) return "";
+  return value.toString().trim().toLowerCase();
+};
+
+// simple fuzzy match: checks if strings are similar enough
+const fuzzyMatch = (a, b) => {
+  if (!a || !b) return true; // treat missing values as match
+  a = sanitize(a);
+  b = sanitize(b);
+
+  // EXACT match → match
+  if (a === b) return true;
+
+  // partial contains match → match
+  if (a.includes(b) || b.includes(a)) return true;
+
+  // fuzzy: allow small typos (Levenshtein distance ≤ 2)
+  const distance = levenshtein(a, b);
+  return distance <= 2;
+};
+
+// Levenshtein distance
+const levenshtein = (a, b) => {
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    new Array(b.length + 1).fill(0)
+  );
+
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
   }
-  return value; // for numbers or undefined
+
+  return matrix[a.length][b.length];
 };
 
 const isMatch = (lost, found) => {
-  // sanitize all comparable fields
-  const lostCategory = sanitize(lost.category);
-  const foundCategory = sanitize(found.category);
-
-  const lostColor = sanitize(lost.itemColor);
-  const foundColor = sanitize(found.itemColor);
-
-  const lostSize = sanitize(lost.itemSize);
-  const foundSize = sanitize(found.itemSize);
-
-  const lostBrand = sanitize(lost.brandType);
-  const foundBrand = sanitize(found.brandType);
-
-  const lostIdentifier = sanitize(lost.uniqueIdentifier);
-  const foundIdentifier = sanitize(found.uniqueIdentifier);
-
   return (
-    // Category must match
-    lostCategory === foundCategory &&
-    // Item color matches or either missing
-    (!lostColor || !foundColor || lostColor === foundColor) &&
-    // Item size matches or either missing
-    (!lostSize || !foundSize || lostSize === foundSize) &&
-    // Brand type matches or either missing
-    (!lostBrand || !foundBrand || lostBrand === foundBrand) &&
-    // Money amount matches or either missing/zero
+    sanitize(lost.category) === sanitize(found.category) &&
+    fuzzyMatch(lost.itemColor, found.itemColor) &&
+    fuzzyMatch(lost.itemSize, found.itemSize) &&
+    fuzzyMatch(lost.brandType, found.brandType) &&
+    fuzzyMatch(lost.uniqueIdentifier, found.uniqueIdentifier) &&
     (!lost.moneyAmount ||
       !found.moneyAmount ||
-      lost.moneyAmount === found.moneyAmount) &&
-    // Unique identifier matches or missing
-    (!lostIdentifier || !foundIdentifier || lostIdentifier === foundIdentifier)
+      lost.moneyAmount === found.moneyAmount)
   );
 };
 
