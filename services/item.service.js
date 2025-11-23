@@ -66,15 +66,18 @@ const categoryMatch = async (data) => {
       break;
 
     case "Gadgets":
-      if (!data.brandType) throw new Error("Brand Name is required for Gadgets");
+      if (!data.brandType)
+        throw new Error("Brand Name is required for Gadgets");
+      if (!data.itemColor)
+        throw new Error("Item Color is required for Gadgets");
       if (!data.uniqueIdentifier)
         throw new Error(
           "Unique Identifier (IMEI/serial) is required for Gadgets"
         );
       else {
-        if (data.itemSize || data.itemColor || data.moneyAmount)
+        if (data.itemSize || data.moneyAmount)
           throw new Error(
-            "Only Brand Type and Unique Identifier are allowed for Gadgets"
+            "Only Brand Type, Item Color and Unique Identifier are allowed for Gadgets"
           );
       }
       break;
