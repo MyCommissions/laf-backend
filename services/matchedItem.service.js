@@ -375,10 +375,8 @@ const getAllClaimedItem = async () => {
       status: record.status,
       claimedBy: record.claimedBy,
 
-      // ❌ remove lostItem — do not include it at all
       lostItem: null,
 
-      // ✅ only include found item
       foundItem: {
         ...record.foundItem.toObject(),
         type: "found",
@@ -410,16 +408,36 @@ const getAllClaimedItem = async () => {
       lastName: item.lastName || null,
       timeOfClaim: item.updatedAt || null,
     },
+
     updatedAt: item.updatedAt,
     createdAt: item.createdAt,
   }));
 
   // 5️⃣ Merge everything
-  const allClaims = [...formattedMatched, ...formattedStandalone].sort(
+  const merged = [...formattedMatched, ...formattedStandalone].sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
 
-  return allClaims;
+  // 6️⃣ Remove duplicates (prefer matched > standalone)
+  const map = new Map();
+
+  for (const item of merged) {
+    const groupId = item.foundItem?._id || item._id;
+
+    if (!map.has(groupId)) {
+      map.set(groupId, item);
+      continue;
+    }
+
+    const existing = map.get(groupId);
+
+    // Priority: keep matched over standalone
+    if (item.type === "matched" && existing.type === "standalone") {
+      map.set(groupId, item);
+    }
+  }
+
+  return Array.from(map.values());
 };
 
 const getAllMatchedAndPendingItems = async () => {
