@@ -352,92 +352,53 @@ const getPendingItems = async () => {
 };
 
 const getAllClaimedItem = async () => {
-  // 1️⃣ Get all matched items that have been claimed
+  // 1️⃣ Fetch all matched claimed items
   const matchedClaims = await MatchedItem.find({ status: "claimed" })
-    .populate("lostItem")
     .populate("foundItem")
     .populate("claimedBy")
     .sort({ updatedAt: -1 });
 
-  // 2️⃣ Get standalone found items that were directly claimed (not matched)
+  // 2️⃣ Fetch standalone claimed found items
   const standaloneClaims = await Item.find({
     found: true,
     claimed: true,
     matched: false,
   }).sort({ updatedAt: -1 });
 
-  // 3️⃣ Normalize matched claimed items — ONLY return the found item
-  const formattedMatched = matchedClaims
-    .filter((record) => record.foundItem) // keep only actual found claimed
-    .map((record) => ({
-      _id: record._id,
-      type: "matched",
-      status: record.status,
-      claimedBy: record.claimedBy,
+  // 3️⃣ Normalize matched → return only the FOUND item info
+  const formattedMatched = matchedClaims.map((record) => ({
+    _id: record._id,
+    type: "found", // unified
+    status: "claimed",
+    claimedBy: record.claimedBy,
+    foundItem: record.foundItem
+      ? {
+          ...record.foundItem.toObject(),
+          type: "found",
+        }
+      : null,
+    updatedAt: record.updatedAt,
+    createdAt: record.createdAt,
+  }));
 
-      lostItem: null,
-
-      foundItem: {
-        ...record.foundItem.toObject(),
-        type: "found",
-      },
-
-      claimInfo: record.claimInfo,
-      updatedAt: record.updatedAt,
-      createdAt: record.createdAt,
-    }));
-
-  // 4️⃣ Normalize standalone claimed found items
+  // 4️⃣ Format standalone found claims
   const formattedStandalone = standaloneClaims.map((item) => ({
     _id: item._id,
-    type: "standalone",
+    type: "found",
     status: "claimed",
-    claimedBy: item.claimedBy || null,
-
-    lostItem: null,
-
+    claimedBy: null,
     foundItem: {
       ...item.toObject(),
       type: "found",
     },
-
-    claimInfo: {
-      imageUuid: null,
-      contactNumber: item.contactNumber || null,
-      firstName: item.firstName || null,
-      lastName: item.lastName || null,
-      timeOfClaim: item.updatedAt || null,
-    },
-
     updatedAt: item.updatedAt,
     createdAt: item.createdAt,
   }));
 
-  // 5️⃣ Merge everything
-  const merged = [...formattedMatched, ...formattedStandalone].sort(
+  // 5️⃣ Combine
+  return [...formattedMatched, ...formattedStandalone].sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
-
-  // 6️⃣ Remove duplicates (prefer matched > standalone)
-  const map = new Map();
-
-  for (const item of merged) {
-    const groupId = item.foundItem?._id || item._id;
-
-    if (!map.has(groupId)) {
-      map.set(groupId, item);
-      continue;
-    }
-
-    const existing = map.get(groupId);
-
-    // Priority: keep matched over standalone
-    if (item.type === "matched" && existing.type === "standalone") {
-      map.set(groupId, item);
-    }
-  }
-
-  return Array.from(map.values());
 };
 
 const getAllMatchedAndPendingItems = async () => {
