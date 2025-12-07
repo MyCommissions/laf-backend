@@ -366,28 +366,30 @@ const getAllClaimedItem = async () => {
     matched: false,
   }).sort({ updatedAt: -1 });
 
-  // 3️⃣ Normalize matched claimed items
-  const formattedMatched = matchedClaims.map((record) => ({
-    _id: record._id,
-    type: "matched",
-    status: record.status,
-    claimedBy: record.claimedBy,
-    lostItem: record.lostItem
-      ? {
-          ...record.lostItem.toObject(),
-          type: "lost",
-        }
-      : null,
-    foundItem: record.foundItem
-      ? {
-          ...record.foundItem.toObject(),
-          type: "found",
-        }
-      : null,
-    claimInfo: record.claimInfo,
-    updatedAt: record.updatedAt,
-    createdAt: record.createdAt,
-  }));
+  // 3️⃣ Normalize matched claimed items (ONLY keep those with foundItem)
+  const formattedMatched = matchedClaims
+    .filter((record) => record.foundItem) // ✅ Keep ONLY found claimed items
+    .map((record) => ({
+      _id: record._id,
+      type: "matched",
+      status: record.status,
+      claimedBy: record.claimedBy,
+      lostItem: record.lostItem
+        ? {
+            ...record.lostItem.toObject(),
+            type: "lost",
+          }
+        : null,
+      foundItem: record.foundItem
+        ? {
+            ...record.foundItem.toObject(),
+            type: "found",
+          }
+        : null,
+      claimInfo: record.claimInfo,
+      updatedAt: record.updatedAt,
+      createdAt: record.createdAt,
+    }));
 
   // 4️⃣ Normalize standalone claimed found items
   const formattedStandalone = standaloneClaims.map((item) => ({
