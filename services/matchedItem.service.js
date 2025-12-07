@@ -366,26 +366,24 @@ const getAllClaimedItem = async () => {
     matched: false,
   }).sort({ updatedAt: -1 });
 
-  // 3️⃣ Normalize matched claimed items (ONLY keep those with foundItem)
+  // 3️⃣ Normalize matched claimed items — ONLY return the found item
   const formattedMatched = matchedClaims
-    .filter((record) => record.foundItem) // ✅ Keep ONLY found claimed items
+    .filter((record) => record.foundItem) // keep only actual found claimed
     .map((record) => ({
       _id: record._id,
       type: "matched",
       status: record.status,
       claimedBy: record.claimedBy,
-      lostItem: record.lostItem
-        ? {
-            ...record.lostItem.toObject(),
-            type: "lost",
-          }
-        : null,
-      foundItem: record.foundItem
-        ? {
-            ...record.foundItem.toObject(),
-            type: "found",
-          }
-        : null,
+
+      // ❌ remove lostItem — do not include it at all
+      lostItem: null,
+
+      // ✅ only include found item
+      foundItem: {
+        ...record.foundItem.toObject(),
+        type: "found",
+      },
+
       claimInfo: record.claimInfo,
       updatedAt: record.updatedAt,
       createdAt: record.createdAt,
@@ -397,11 +395,14 @@ const getAllClaimedItem = async () => {
     type: "standalone",
     status: "claimed",
     claimedBy: item.claimedBy || null,
+
     lostItem: null,
+
     foundItem: {
       ...item.toObject(),
       type: "found",
     },
+
     claimInfo: {
       imageUuid: null,
       contactNumber: item.contactNumber || null,
@@ -413,7 +414,7 @@ const getAllClaimedItem = async () => {
     createdAt: item.createdAt,
   }));
 
-  // 5️⃣ Merge and sort all claimed records
+  // 5️⃣ Merge everything
   const allClaims = [...formattedMatched, ...formattedStandalone].sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
