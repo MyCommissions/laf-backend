@@ -352,51 +352,58 @@ const getPendingItems = async () => {
 };
 
 const getAllClaimedItem = async () => {
-  // 1️⃣ Fetch all matched claimed items
+  // 1️⃣ Fetch all matched & claimed records (MatchedItem table)
   const matchedClaims = await MatchedItem.find({ status: "claimed" })
     .populate("foundItem")
     .populate("claimedBy")
     .sort({ updatedAt: -1 });
 
-  // 2️⃣ Fetch standalone claimed found items
+  // 2️⃣ Fetch standalone claimed found items (Items table)
   const standaloneClaims = await Item.find({
     found: true,
     claimed: true,
-    matched: false,
+    matched: false, // important!
   }).sort({ updatedAt: -1 });
 
-  // 3️⃣ Normalize matched → return only the FOUND item info
-  const formattedMatched = matchedClaims.map((record) => ({
-    _id: record._id,
-    type: "found", // unified
-    status: "claimed",
-    claimedBy: record.claimedBy,
-    foundItem: record.foundItem
-      ? {
-          ...record.foundItem.toObject(),
-          type: "found",
-        }
-      : null,
-    updatedAt: record.updatedAt,
-    createdAt: record.createdAt,
-  }));
+  // 3️⃣ Convert matched-claimed → only return FOUND item details (no lost)
+  const formattedMatched = matchedClaims
+    .filter((m) => m.foundItem) // safety
+    .map((record) => ({
+      _id: record.foundItem._id, // unify ID to the found item id
+      type: "found",
+      status: "claimed",
+      claimedBy: record.claimedBy || null,
+      claimInfo: record.claimInfo || null,
+      foundItem: record.foundItem.toObject(),
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      source: "matched", // debug info
+    }));
 
-  // 4️⃣ Format standalone found claims
+  // 4️⃣ Convert standalone found claims
   const formattedStandalone = standaloneClaims.map((item) => ({
     _id: item._id,
     type: "found",
     status: "claimed",
     claimedBy: null,
-    foundItem: {
-      ...item.toObject(),
-      type: "found",
-    },
-    updatedAt: item.updatedAt,
+    claimInfo: item.claimInfo || null,
+    foundItem: item.toObject(),
     createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    source: "standalone",
   }));
 
-  // 5️⃣ Combine
-  return [...formattedMatched, ...formattedStandalone].sort(
+  // 5️⃣ Combine matched + standalone
+  const combined = [...formattedMatched, ...formattedStandalone];
+
+  // 6️⃣ Remove duplicates by found item ID
+  const uniqueMap = new Map();
+  combined.forEach((entry) => {
+    uniqueMap.set(entry._id.toString(), entry);
+  });
+
+  // 7️⃣ Return sorted list
+  return Array.from(uniqueMap.values()).sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
 };
